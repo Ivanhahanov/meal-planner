@@ -381,7 +381,7 @@ const RecipesList = ({ dishes, setDishes, allIngredients }) => {
               }}
               showSizeChanger
               pageSizeOptions={['6','9','18']}
-              showTotal={(total, range) => `${range[0]}-${range[1]} из ${total} рецептов`}
+              showTotal={(total, range) => `${range[0]}-${range[1]} из ${total}`}
               responsive
             />
           </div>

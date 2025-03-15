@@ -6,13 +6,27 @@ import {
 import {
     SettingOutlined, AppstoreOutlined, GlobalOutlined,
     ExperimentOutlined, RobotOutlined, ClockCircleOutlined,
-    CalendarOutlined, TeamOutlined, UserOutlined, CloseOutlined
+    CalendarOutlined, TeamOutlined, UserOutlined, CloseOutlined, UserAddOutlined, ProfileOutlined
 } from '@ant-design/icons';
-
 const { Text } = Typography;
 const { Panel } = Collapse;
 
 const daysOfWeek = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
+const shortenedDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+const useMobileDetect = () => {
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.matchMedia('(max-width: 768px)').matches);
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    return isMobile;
+};
 
 const GenerateMenuModal = ({
     isGenerateModalVisible,
@@ -23,6 +37,7 @@ const GenerateMenuModal = ({
     categories,
     cuisines
 }) => {
+    const isMobile = useMobileDetect();
     const [activeTab, setActiveTab] = useState('basic');
     const [daySettingsOpen, setDaySettingsOpen] = useState([]);
     const [errors, setErrors] = useState([]);
@@ -168,68 +183,68 @@ const GenerateMenuModal = ({
         const dishUsageMap = new Map(); // { dishName: day[] }
         const dailyUsedDishes = new Map();
         const errors = [];
-        
+
         // Получаем индекс дня в неделе для проверки временного интервала
         const getDayIndex = (day) => daysOfWeek.indexOf(day);
-    
+
         daysOfWeek.forEach(day => {
             generatedMenu[day] = [];
             dailyUsedDishes.set(day, new Set());
-    
+
             const dailySettings = settings.daysSettings[day];
             const mealTypes = new Set();
-    
+
             // Собираем уникальные типы приёмов пищи для дня
             dailySettings.users.forEach(user => {
                 user.selectedMeals.forEach(mealType => {
                     mealTypes.add(mealType);
                 });
             });
-    
+
             Array.from(mealTypes).forEach(mealType => {
                 const requiredComponents = mealStructure[mealType] || [];
-                const participatingUsers = dailySettings.users.filter(user => 
+                const participatingUsers = dailySettings.users.filter(user =>
                     user.selectedMeals.includes(mealType)
                 );
-    
+
                 if (participatingUsers.length === 0) return;
-    
+
                 const totalServings = participatingUsers.length;
                 const componentDishes = {};
-    
+
                 requiredComponents.forEach(component => {
                     // Фильтрация с учётом всех ограничений
                     let filteredDishes = dishes.filter(dish => {
                         const matchesComponent = dish.category.includes(component);
                         const matchesType = dish.type.includes(mealType);
-                        const matchesPreferences = settings.preferences.length === 0 || 
+                        const matchesPreferences = settings.preferences.length === 0 ||
                             dish.preference.some(p => settings.preferences.includes(p));
-                        const matchesCuisine = settings.cuisines.length === 0 || 
+                        const matchesCuisine = settings.cuisines.length === 0 ||
                             dish.cuisine.some(c => settings.cuisines.includes(c));
                         const matchesTime = dish.cookingTime <= settings.maxCookingTime;
-    
+
                         // Проверка на повторное использование для meal prep
                         if (settings.mealPrep.enabled) {
                             const usages = dishUsageMap.get(dish.name) || [];
                             const currentDayIndex = getDayIndex(day);
                             const startIndex = currentDayIndex - (settings.mealPrep.storageDays - 1);
-                            
+
                             // Считаем использование в заданном временном окне
                             const relevantUsages = usages.filter(usageDay => {
                                 const usageIndex = getDayIndex(usageDay);
-                                return usageIndex >= Math.max(startIndex, 0) && 
-                                       usageIndex <= currentDayIndex;
+                                return usageIndex >= Math.max(startIndex, 0) &&
+                                    usageIndex <= currentDayIndex;
                             });
-                            
+
                             if (relevantUsages.length >= settings.mealPrep.maxReuse) {
                                 return false;
                             }
                         }
-    
-                        return matchesComponent && matchesType && matchesPreferences && 
-                               matchesCuisine && matchesTime;
+
+                        return matchesComponent && matchesType && matchesPreferences &&
+                            matchesCuisine && matchesTime;
                     });
-    
+
                     // Проверка на доступные блюда
                     if (filteredDishes.length === 0) {
                         errors.push({
@@ -240,36 +255,36 @@ const GenerateMenuModal = ({
                         });
                         return;
                     }
-    
+
                     // Сортируем блюда по частоте использования для разнообразия
                     filteredDishes.sort((a, b) => {
                         const aCount = (dishUsageMap.get(a.name) || []).length;
                         const bCount = (dishUsageMap.get(b.name) || []).length;
                         return aCount - bCount;
                     });
-    
+
                     // Выбираем из 3 наименее используемых для случайности
                     const topCandidates = filteredDishes.slice(0, 3);
                     const selectedDish = topCandidates[
                         Math.floor(Math.random() * topCandidates.length)
                     ];
-                    
+
                     componentDishes[component] = selectedDish;
                 });
-    
+
                 if (Object.keys(componentDishes).length !== requiredComponents.length) return;
-    
+
                 // Обновляем статистику использования
                 Object.values(componentDishes).forEach(selectedDish => {
                     // Обновляем глобальное использование
                     const usages = dishUsageMap.get(selectedDish.name) || [];
                     dishUsageMap.set(selectedDish.name, [...usages, day]);
-    
+
                     // Добавляем блюдо в день
                     const existingEntry = generatedMenu[day].find(
                         entry => entry.dish.name === selectedDish.name
                     );
-                    
+
                     if (existingEntry) {
                         existingEntry.servings += totalServings;
                     } else {
@@ -278,17 +293,17 @@ const GenerateMenuModal = ({
                             servings: totalServings
                         });
                     }
-    
+
                     dailyUsedDishes.get(day).add(selectedDish.name);
                 });
             });
         });
-    
+
         if (errors.length > 0) {
             setErrors(errors);
             return false;
         }
-    
+
         setErrors([]);
         setMenu(generatedMenu);
         return true;
@@ -297,14 +312,14 @@ const GenerateMenuModal = ({
     useEffect(() => {
         // Автоматическое обновление количества пользователей для всех дней
         const newDaysSettings = { ...generationSettings.daysSettings };
-        
+
         daysOfWeek.forEach(day => {
             const currentUsers = newDaysSettings[day].users;
             const targetCount = generationSettings.defaultPeopleCount;
-            
+
             // Сохраняем существующих пользователей
             const updatedUsers = currentUsers.slice(0, targetCount);
-            
+
             // Добавляем новых пользователей при необходимости
             while (updatedUsers.length < targetCount) {
                 const newUserId = updatedUsers.length + 1;
@@ -314,13 +329,13 @@ const GenerateMenuModal = ({
                     selectedMeals: [...generationSettings.defaultMealTypes],
                 });
             }
-    
+
             newDaysSettings[day] = {
                 ...newDaysSettings[day],
                 users: updatedUsers
             };
         });
-    
+
         setGenerationSettings(prev => ({
             ...prev,
             daysSettings: newDaysSettings
@@ -330,14 +345,14 @@ const GenerateMenuModal = ({
     useEffect(() => {
         // Обновляем выбранные приёмы пищи для всех пользователей
         const newDaysSettings = { ...generationSettings.daysSettings };
-        
+
         daysOfWeek.forEach(day => {
             newDaysSettings[day].users = newDaysSettings[day].users.map(user => ({
                 ...user,
                 selectedMeals: generationSettings.defaultMealTypes
             }));
         });
-    
+
         setGenerationSettings(prev => ({
             ...prev,
             daysSettings: newDaysSettings
@@ -362,7 +377,7 @@ const GenerateMenuModal = ({
                         />
                     </Form.Item>
 
-                    <Form.Item label="Макс. время готовки (мин)">
+                    <Form.Item label="Макс. время готовки">
                         <Slider
                             min={10}
                             max={180}
@@ -421,7 +436,7 @@ const GenerateMenuModal = ({
             label: <span><AppstoreOutlined /> Предпочтения</span>,
             children: (
                 <>
-                    <Form.Item label="Пищевые ограничения">
+                    <Form.Item label="Предпочтения">
                         <Select
                             mode="multiple"
                             value={generationSettings.preferences}
@@ -430,18 +445,6 @@ const GenerateMenuModal = ({
                                 preferences: value
                             }))}
                             options={preferences.map(p => ({ label: p, value: p }))}
-                        />
-                    </Form.Item>
-
-                    <Form.Item label="Типы блюд">
-                        <Select
-                            mode="multiple"
-                            value={generationSettings.categories}
-                            onChange={value => setGenerationSettings(prev => ({
-                                ...prev,
-                                categories: value
-                            }))}
-                            options={categories.map(c => ({ label: c, value: c }))}
                         />
                     </Form.Item>
 
@@ -461,7 +464,7 @@ const GenerateMenuModal = ({
         },
         {
             key: 'structure',
-            label: <span><GlobalOutlined /> Структура меню</span>,
+            label: <span><ProfileOutlined /> Структура меню</span>,
             children: (
                 <div>
                     {Object.keys(mealStructure).map(mealType => (
@@ -485,28 +488,36 @@ const GenerateMenuModal = ({
             key: 'schedule',
             label: <span><CalendarOutlined /> Расписание</span>,
             children: (
-                <Collapse activeKey={daySettingsOpen} onChange={setDaySettingsOpen}>
-                    {daysOfWeek.map(day => (
+                <Collapse
+                    activeKey={daySettingsOpen}
+                    onChange={setDaySettingsOpen}
+                    ghost
+                    collapsible="icon"
+                >
+                    {daysOfWeek.map((day, index) => (
                         <Panel
-                            header={day}
                             key={day}
-                            extra={
-                                <Space>
-                                    <Text>{generationSettings.daysSettings[day].users.length} чел.</Text>
-                                    <Button
-                                        type="primary"
-                                        size="small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            addNewUser(day);
-                                        }}
-                                    >
-                                        + Добавить
-                                    </Button>
+                            header={
+                                <Space align="center">
+                                    <Text strong>{daysOfWeek[index]}</Text>
+                                    <Text type="secondary">{generationSettings.daysSettings[day].users.length} чел.</Text>
                                 </Space>
                             }
+                            extra={
+                                <Button
+                                    size="small"
+                                    type="text"
+                                    icon={<UserAddOutlined />}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        addNewUser(day);
+                                    }}
+                                />
+                            }
                         >
-                            {renderUserSettings(day)}
+                            <div style={{ marginLeft: isMobile ? 0 : 24 }}>
+                                {renderUserSettings(day)}
+                            </div>
                         </Panel>
                     ))}
                 </Collapse>
@@ -526,7 +537,11 @@ const GenerateMenuModal = ({
             }
             open={isGenerateModalVisible}
             onCancel={() => setIsGenerateModalVisible(false)}
-            width={800}
+            width={isMobile ? '90%' : 800}
+            style={{
+                top: isMobile ? 10 : 100,
+                maxHeight: isMobile ? '90vh' : '80vh'
+            }}
             footer={[
                 <Button key="back" onClick={() => setIsGenerateModalVisible(false)}>
                     Отмена
@@ -544,14 +559,22 @@ const GenerateMenuModal = ({
                 </Button>
             ]}
         >
-             <Tabs
+            <Tabs
                 activeKey={activeTab}
                 onChange={setActiveTab}
-                tabPosition="left"
+                tabPosition={isMobile ? 'top' : 'left'}
                 items={sections.map(s => ({
                     label: s.label,
                     key: s.key,
-                    children: s.children
+                    children: (
+                        <div style={{
+                            maxHeight: isMobile ? '60vh' : '65vh',
+                            overflowY: 'auto',
+                            padding: isMobile ? '0 8px' : '0 16px'
+                        }}>
+                            {s.children}
+                        </div>
+                    )
                 }))}
             />
 

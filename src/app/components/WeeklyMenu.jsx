@@ -3,7 +3,7 @@ import '@ant-design/v5-patch-for-react-19';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button, Card, Typography, Segmented, Space, Select, Modal, Input, message } from 'antd';
 import { useAuth } from '../context/AuthContext'
-import { PlusOutlined, ShoppingCartOutlined, BookOutlined, SyncOutlined, SaveOutlined } from '@ant-design/icons';
+import { PlusOutlined, ShoppingCartOutlined, BookOutlined, SyncOutlined, SaveOutlined, RobotOutlined } from '@ant-design/icons';
 import DishModal from './DishModal';
 import ShoppingList from './ShoppingList';
 import AddDishModal from './AddDishModal';
@@ -533,7 +533,7 @@ const WeeklyMenu = () => {
             <Space wrap>
               <Button
                 type="primary"
-                icon={<SyncOutlined />}
+                icon={<RobotOutlined />}
                 onClick={() => setIsGenerateModalVisible(true)}
               >
                 Сгенерировать меню
