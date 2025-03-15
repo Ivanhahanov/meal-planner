@@ -1,9 +1,9 @@
 "use client"
 import '@ant-design/v5-patch-for-react-19';
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Card, Typography, Segmented, Space, Select, Modal, Input, message } from 'antd';
 import { useAuth } from '../context/AuthContext'
-import { PlusOutlined, ShoppingCartOutlined, BookOutlined, SyncOutlined, SaveOutlined, RobotOutlined } from '@ant-design/icons';
+import { PlusOutlined, ShoppingCartOutlined, BookOutlined, ScheduleOutlined, SaveOutlined, RobotOutlined } from '@ant-design/icons';
 import DishModal from './DishModal';
 import ShoppingList from './ShoppingList';
 import AddDishModal from './AddDishModal';
@@ -512,7 +512,7 @@ const WeeklyMenu = () => {
 
       <Segmented
         options={[
-          { label: 'Меню', value: 'menu', icon: <BookOutlined /> },
+          { label: 'Меню', value: 'menu', icon: <ScheduleOutlined /> },
           { label: 'Список покупок', value: 'shopping', icon: <ShoppingCartOutlined /> },
           { label: 'Рецепты', value: 'recipes', icon: <BookOutlined /> },
         ]}
@@ -534,7 +534,14 @@ const WeeklyMenu = () => {
               <Button
                 type="primary"
                 icon={<RobotOutlined />}
-                onClick={() => setIsGenerateModalVisible(true)}
+                onClick={() => {
+                  if (preferences.length > 0 && categories.length > 0 && cuisines.length > 0) {
+                    setIsGenerateModalVisible(true);
+                  } else {
+                    message.info('Данные ещё загружаются...');
+                  }
+                }}
+                disabled={preferences.length === 0 || categories.length === 0 || cuisines.length === 0}
               >
                 Сгенерировать меню
               </Button>
@@ -560,8 +567,6 @@ const WeeklyMenu = () => {
             loading={loading}
           />
 
-
-          {/* Добавляем новое модальное окно */}
           <GenerateMenuModal
             isGenerateModalVisible={isGenerateModalVisible}
             setIsGenerateModalVisible={setIsGenerateModalVisible}

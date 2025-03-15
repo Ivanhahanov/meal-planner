@@ -5,7 +5,7 @@ import { CopyOutlined, CheckOutlined } from '@ant-design/icons';
 
 const ShoppingList = ({ shoppingList }) => {
   const [checkedItems, setCheckedItems] = useState({});
-  const [isCopied, setIsCopied] = useState(false); // Состояние для индикатора копирования
+  const [isCopied, setIsCopied] = useState(false);
 
   const handleCheck = (ingredientName, checked) => {
     setCheckedItems((prev) => ({
@@ -19,9 +19,9 @@ const ShoppingList = ({ shoppingList }) => {
       .map((ingredient) => `${ingredient.name} - ${ingredient.quantity} ${ingredient.unit}`)
       .join('\n');
     navigator.clipboard.writeText(listString).then(() => {
-      setIsCopied(true); // Устанавливаем индикатор копирования
+      setIsCopied(true); 
       message.success('Список скопирован в буфер обмена!');
-      setTimeout(() => setIsCopied(false), 2000); // Сбрасываем индикатор через 2 секунды
+      setTimeout(() => setIsCopied(false), 2000);
     });
   };
 
@@ -36,18 +36,17 @@ const ShoppingList = ({ shoppingList }) => {
           border: '1px solid #e8e8e8',
           borderRadius: '8px',
           backgroundColor: '#fafafa',
-          position: 'relative', // Для позиционирования кнопки
+          position: 'relative',
         }}
       >
-        {/* Кнопка "Скопировать" сверху справа */}
         <Button
-          icon={isCopied ? <CheckOutlined /> : <CopyOutlined />} // Меняем иконку на галочку, если скопировано
+          icon={isCopied ? <CheckOutlined /> : <CopyOutlined />}
           onClick={copyToClipboard}
           style={{
             position: 'absolute',
             top: '16px',
             right: '16px',
-            width: '40px', // Маленький размер
+            width: '40px',
             height: '40px',
             display: 'flex',
             alignItems: 'center',
@@ -67,7 +66,6 @@ const ShoppingList = ({ shoppingList }) => {
                 alignItems: 'center',
               }}
             >
-              {/* Круглый чекбокс */}
               <Checkbox
                 checked={checkedItems[ingredient.name] || false}
                 onChange={(e) => handleCheck(ingredient.name, e.target.checked)}
@@ -77,12 +75,11 @@ const ShoppingList = ({ shoppingList }) => {
                   height: '20px',
                 }}
               />
-              {/* Текст рядом с чекбоксом */}
               <span
                 style={{
                   textDecoration: checkedItems[ingredient.name] ? 'line-through' : 'none',
                   color: checkedItems[ingredient.name] ? '#999' : '#000',
-                  flex: 1, // Чтобы текст занимал оставшееся пространство
+                  flex: 1,
                 }}
               >
                 {ingredient.name} - {ingredient.quantity} {ingredient.unit}

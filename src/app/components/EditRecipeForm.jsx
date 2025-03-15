@@ -28,7 +28,7 @@ const preferences = ['Мясное', 'Рыбное', 'Вегетарианско
 const cuisines = ['Русская', 'Итальянская', 'Азиатская', 'Средиземноморская'];
 
 const SHEET_ID = process.env.NEXT_PUBLIC_GOOGLE_SHEET_ID;
-const RANGE = process.env.NEXT_PUBLIC_GOOGLE_SHEET_RANGE;
+const RANGE = process.env.NEXT_PUBLIC_GOOGLE_SHEET_RANGE || 'Recipes!A1:J';
 
 const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
   const { token, login } = useAuth();

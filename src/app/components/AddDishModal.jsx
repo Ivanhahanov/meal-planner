@@ -8,7 +8,7 @@ const { Option } = Select;
 const { Text } = Typography;
 const units = ['г', 'кг', 'мл', 'л', 'шт', 'зубч', 'ст.л', 'ч.л'];
 const SHEET_ID = process.env.NEXT_PUBLIC_GOOGLE_SHEET_ID;
-const RANGE = process.env.NEXT_PUBLIC_GOOGLE_SHEET_RANGE;
+const RANGE = process.env.NEXT_PUBLIC_GOOGLE_SHEET_RANGE || 'Recipes!A1:J';
 
 const AddDishModal = ({ visible, onCancel, onAddDish, allIngredients, mealTypes, categories, preferences, cuisines }) => {
   const { token, login } = useAuth();

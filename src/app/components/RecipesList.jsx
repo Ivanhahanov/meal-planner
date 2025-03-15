@@ -40,7 +40,7 @@ const TAG_CONFIG = {
 };
 
 const SHEET_ID = process.env.NEXT_PUBLIC_GOOGLE_SHEET_ID;
-const RANGE = process.env.NEXT_PUBLIC_GOOGLE_SHEET_RANGE;
+const RANGE = process.env.NEXT_PUBLIC_GOOGLE_SHEET_RANGE || 'Recipes!A1:J';
 
 const RecipesList = ({ dishes, setDishes, allIngredients }) => {
   const { token, login } = useAuth();
@@ -103,15 +103,13 @@ const RecipesList = ({ dishes, setDishes, allIngredients }) => {
       if (!response.ok) throw new Error('Ошибка получения данных');
       const data = await response.json();
 
-      // 2. Находим индексы строк для удаления
       const rowsToDelete = data.values
         .map((row, index) => row[0] === recipeToDelete.name ? index + 1 : null)
         .filter(index => index !== null)
-        .sort((a, b) => b - a); // Сортировка в обратном порядке для безопасного удаления
+        .sort((a, b) => b - a);
 
       console.log('Найдены строки для удаления:', rowsToDelete);
 
-      // 3. Формируем запрос на удаление
       const deleteRequests = rowsToDelete.map(index => ({
         deleteDimension: {
           range: {
@@ -123,7 +121,6 @@ const RecipesList = ({ dishes, setDishes, allIngredients }) => {
         }
       }));
 
-      // 4. Отправляем batchUpdate
       const batchUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}:batchUpdate`;
       const batchResponse = await fetch(batchUrl, {
         method: 'POST',
@@ -136,7 +133,7 @@ const RecipesList = ({ dishes, setDishes, allIngredients }) => {
 
       if (!batchResponse.ok) throw new Error('Ошибка удаления');
 
-      // Обновляем локальное состояние
+
       setDishes(prev => prev.filter(dish => dish.name !== recipeToDelete.name));
       message.success('Рецепт успешно удален');
     } catch (error) {
@@ -148,7 +145,6 @@ const RecipesList = ({ dishes, setDishes, allIngredients }) => {
     }
   };
 
-  // Фильтрация рецептов
   const filteredDishes = useMemo(() => dishes.filter(dish => {
     const matchesSearch = dish.name.toLowerCase().includes(searchText.toLowerCase());
     const matchesTime = filters.cookingTime ? dish.cookingTime <= filters.cookingTime : true;

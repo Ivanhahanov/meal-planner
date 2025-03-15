@@ -4,15 +4,15 @@ import {
     Tag, Button, Tooltip, Typography, Collapse, Checkbox, InputNumber, Input, Alert
 } from 'antd';
 import {
-    SettingOutlined, AppstoreOutlined, GlobalOutlined,
+    SettingOutlined, AppstoreOutlined,
     ExperimentOutlined, RobotOutlined, ClockCircleOutlined,
-    CalendarOutlined, TeamOutlined, UserOutlined, CloseOutlined, UserAddOutlined, ProfileOutlined
+    CalendarOutlined, TeamOutlined, UserOutlined, 
+    CloseOutlined, UserAddOutlined, ProfileOutlined
 } from '@ant-design/icons';
 const { Text } = Typography;
 const { Panel } = Collapse;
 
 const daysOfWeek = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
-const shortenedDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
 const useMobileDetect = () => {
     const [isMobile, setIsMobile] = useState(false);
@@ -73,6 +73,15 @@ const GenerateMenuModal = ({
             storageDays: 2
         }
     });
+
+    useEffect(() => {
+        setGenerationSettings(prev => ({
+          ...prev,
+          preferences: [...preferences],
+          categories: [...categories],
+          cuisines: [...cuisines],
+        }));
+      }, [preferences, categories, cuisines]);
 
     const allMealTypes = Object.keys(mealStructure)
 
