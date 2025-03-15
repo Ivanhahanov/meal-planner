@@ -1,0 +1,47 @@
+.menuItem {
+  position: relative;
+  padding: 2px 0;
+  overflow: hidden;
+}
+
+.menuItem:hover {
+  background: #fafafa;
+}
+
+.menuContent {
+  display: flex;
+  align-items: flex-start; /* Выравниваем по верхнему краю */
+  gap: 8px;
+  width: 100%;
+ 
+}
+
+.dishName {
+  flex: 1;
+  min-width: 0;
+  white-space: normal; /* Разрешаем перенос текста */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menuItem:hover .dishName {
+  white-space: nowrap; /* Запрещаем перенос при наведении */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 80px; /* Освобождаем место для кнопок */
+}
+
+.menuActions {
+  position: absolute;
+  right: 1px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 1px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.menuItem:hover .menuActions {
+  opacity: 1;
+}
