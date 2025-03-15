@@ -18,8 +18,8 @@ const daysOfWeek = ['Понедельник', 'Вторник', 'Среда', '�
 
 
 const SHEET_ID = process.env.NEXT_PUBLIC_GOOGLE_SHEET_ID;
-const RANGE = process.env.NEXT_PUBLIC_GOOGLE_SHEET_RANGE;
-const MENU_RANGE = process.env.NEXT_PUBLIC_GOOGLE_SHEET_MENU_RANGE;
+const RANGE = process.env.NEXT_PUBLIC_GOOGLE_SHEET_RANGE || 'Recipes!A1:J';
+const MENU_RANGE = process.env.NEXT_PUBLIC_GOOGLE_SHEET_MENU_RANGE || 'Menu!A1:D';
 
 
 const WeeklyMenu = () => {

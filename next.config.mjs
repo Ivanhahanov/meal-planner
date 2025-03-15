@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    basePath: process.env.PAGES_BASE_PATH,
+    basePath: process.env.PAGES_BASE_PATH || '',
     output: "export",
 };
 
