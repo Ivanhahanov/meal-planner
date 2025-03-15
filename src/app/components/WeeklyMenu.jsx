@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button, Card, Typography, Segmented, Space, Select, Modal, Input, message } from 'antd';
 import { useAuth } from '../context/AuthContext'
 import { PlusOutlined, ShoppingCartOutlined, BookOutlined, SyncOutlined, SaveOutlined } from '@ant-design/icons';
-
 import DishModal from './DishModal';
 import ShoppingList from './ShoppingList';
 import AddDishModal from './AddDishModal';
@@ -480,7 +479,7 @@ const WeeklyMenu = () => {
       }}>
         <Title level={2} style={{ marginRight: 'auto', marginBottom: 0, display: 'flex', alignItems: 'center' }}>
           <img
-            src="/lunchbox.png" // Путь относительно папки public
+            src={`${process.env.NEXT_PUBLIC_BASE_PATH}/lunchbox.png`} // Путь относительно папки public
             alt="Lunchbox"
             style={{
               width: 32,
