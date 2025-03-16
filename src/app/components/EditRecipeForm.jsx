@@ -67,7 +67,7 @@ const EditRecipeForm = ({
     try {
       await form.validateFields();
       const values = form.getFieldsValue();
-  
+
       const updatedRecipe = {
         ...values,
         cookingTime: Number(values.cookingTime),
@@ -82,7 +82,7 @@ const EditRecipeForm = ({
         }))
       };
       setLoading(true);
-  
+
       // 1. Получаем данные листа
       const sheetInfo = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?fields=sheets(properties,data.rowData.values(formattedValue))`,
@@ -90,20 +90,20 @@ const EditRecipeForm = ({
       );
       const sheetData = await sheetInfo.json();
       const sheetId = sheetData.sheets[0].properties.sheetId;
-  
+
       // 2. Находим все строки для этого рецепта
       const rowsResponse = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const { values: allRows } = await rowsResponse.json();
-  
+
       // 3. Определяем индексы строк для удаления
       const deleteRowIndexes = allRows
         .map((row, index) => row[0] === originalName ? index : -1)
         .filter(index => index !== -1)
         .sort((a, b) => b - a); // Важно сортировать в обратном порядке
-  
+
       // 4. Формируем запросы на удаление
       const deleteRequests = deleteRowIndexes.map(index => ({
         deleteDimension: {
@@ -115,7 +115,7 @@ const EditRecipeForm = ({
           }
         }
       }));
-  
+
       // 5. Формируем новые данные для добавления
       const newRows = updatedRecipe.ingredients.map(ing => [
         updatedRecipe.name,
@@ -129,7 +129,7 @@ const EditRecipeForm = ({
         ing.quantity,
         ing.unit
       ]);
-  
+
       // 6. Формируем запросы на добавление
       const appendRequest = {
         appendCells: {
@@ -144,10 +144,10 @@ const EditRecipeForm = ({
           fields: "userEnteredValue"
         }
       };
-  
+
       // 7. Собираем все запросы в один batch
       const requests = [...deleteRequests, appendRequest];
-  
+
       // 8. Отправляем batch update
       const batchResponse = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}:batchUpdate`,
@@ -160,20 +160,20 @@ const EditRecipeForm = ({
           body: JSON.stringify({ requests })
         }
       );
-  
+
       const batchData = await batchResponse.json();
       console.log('Batch Update Result:', batchData);
-  
+
       if (!batchResponse.ok) {
         throw new Error(batchData.error?.message || 'Ошибка обновления данных');
       }
-  
+
       // 9. Обновляем локальное состояние
       onSave(updatedRecipe);
       Modal.success({
         content: 'Рецепт успешно обновлен',
       });
-  
+
     } catch (error) {
       console.error('Update Error:', error);
       Modal.error({
@@ -195,24 +195,24 @@ const EditRecipeForm = ({
 
   const ingredientOptions = allIngredients.map(ing => ({ value: ing }));
 
-  // Стили для мобильных устройств
-  const mobileStyle = !screens.md ? { width: '100%' } : {};
-  const isMobile = !screens.md;
+
+  const isMobile = screens.xs;
+  const mobileStyle = isMobile ? { width: '100%' } : {};
 
   return (
     <Form form={form} layout="vertical">
-      <Row gutter={[16, 8]}>
-        <Col xs={24} md={24}>
-          <Form.Item
-            name="name"
-            label="Название рецепта"
-            rules={[{ required: true, message: 'Введите название' }]}
-          >
-            <Input placeholder="Название блюда" />
-          </Form.Item>
-        </Col>
+      {/* Название рецепта */}
+      <Form.Item
+        name="name"
+        label="Название рецепта"
+        rules={[{ required: true, message: 'Введите название' }]}
+      >
+        <Input placeholder="Название блюда" />
+      </Form.Item>
 
-        <Col xs={24} md={12}>
+      {/* Время приготовления - компактный ряд */}
+      <Row >
+        <Col span={12}>
           <Form.Item
             name="cookingTime"
             label="Общее время (мин)"
@@ -220,13 +220,13 @@ const EditRecipeForm = ({
           >
             <InputNumber
               min={1}
-              style={{ width: '100%' }}
+              style={{ width: '95%' }}
               placeholder="30"
             />
           </Form.Item>
         </Col>
-
-        <Col xs={24} md={12}>
+        
+        <Col span={12}>
           <Form.Item
             name="handsOnTime"
             label="Активное время (мин)"
@@ -239,120 +239,124 @@ const EditRecipeForm = ({
             />
           </Form.Item>
         </Col>
+      </Row>
 
-        <Col xs={24} md={24}>
+      <Row gutter={12}>
+        <Col span={12}>
           <Form.Item name="type" label="Тип приема пищи">
             <Select
               mode="multiple"
-              maxTagCount={isMobile ? 'responsive' : undefined}
-              style={mobileStyle}
-            >
-              {mealTypes.map(type => (
-                <Option key={type} value={type}>{type}</Option>
-              ))}
-            </Select>
+              style={{ width: '100%' }}
+              maxTagCount="responsive"
+              options={mealTypes.map(t => ({ value: t, label: t }))} 
+            />
           </Form.Item>
         </Col>
-
-        <Col xs={24} md={24}>
+        
+        <Col span={12}>
           <Form.Item name="category" label="Категория блюда">
             <Select
               mode="multiple"
-              maxTagCount={isMobile ? 'responsive' : undefined}
-              style={mobileStyle}
-            >
-              {categories.map(cat => (
-                <Option key={cat} value={cat}>{cat}</Option>
-              ))}
-            </Select>
+              style={{ width: '100%' }}
+              maxTagCount="responsive"
+              options={categories.map(c => ({ value: c, label: c }))}
+            />
           </Form.Item>
         </Col>
+      </Row>
 
-        <Col xs={24} md={24}>
+      <Row gutter={12}>
+        <Col span={12}>
           <Form.Item name="preference" label="Предпочтения">
             <Select
               mode="multiple"
-              maxTagCount={isMobile ? 'responsive' : undefined}
-              style={mobileStyle}
-            >
-              {preferences.map(pref => (
-                <Option key={pref} value={pref}>{pref}</Option>
-              ))}
-            </Select>
+              style={{ width: '100%' }}
+              maxTagCount="responsive"
+              options={preferences.map(p => ({ value: p, label: p }))}
+            />
           </Form.Item>
         </Col>
-
-        <Col xs={24} md={24}>
+        
+        <Col span={12}>
           <Form.Item name="cuisine" label="Тип кухни">
             <Select
               mode="multiple"
-              maxTagCount={isMobile ? 'responsive' : undefined}
-              style={mobileStyle}
-            >
-              {cuisines.map(cuisine => (
-                <Option key={cuisine} value={cuisine}>{cuisine}</Option>
-              ))}
-            </Select>
+              style={{ width: '100%' }}
+              maxTagCount="responsive"
+              options={cuisines.map(c => ({ value: c, label: c }))}
+            />
           </Form.Item>
         </Col>
       </Row>
 
       <Form.Item label="Ингредиенты">
         {ingredients.map((ingredient, index) => (
-          <div key={index} style={{ marginBottom: 12 }}>
-            <Space
-              align="start"
-              direction={isMobile ? 'vertical' : 'horizontal'}
-              style={{ width: '100%' }}
+          <div key={index} style={{ marginBottom: 12, width: '100%' }}>
+            <Row
+              gutter={[8, 8]}
+              align="middle"
+              style={{ width: '100%', margin: 0 }}
             >
-              <AutoComplete
-                options={ingredientOptions}
-                placeholder="Ингредиент"
-                value={ingredient.name}
-                onChange={(value) => {
-                  const newIngredients = [...ingredients];
-                  newIngredients[index].name = value;
-                  setIngredients(newIngredients);
-                }}
-                style={{ width: isMobile ? '100%' : 200 }}
-                filterOption={(inputValue, option) =>
-                  option.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
-                }
-              />
+              {/* Ингредиент */}
+              <Col xs={11} md={8}>
+                <AutoComplete
+                  options={ingredientOptions}
+                  placeholder="Ингредиент"
+                  value={ingredient.name}
+                  onChange={(value) => {
+                    const newIngredients = [...ingredients];
+                    newIngredients[index].name = value;
+                    setIngredients(newIngredients);
+                  }}
+                  style={{ width: '100%' }}
+                  filterOption={(inputValue, option) =>
+                    option.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+                  }
+                />
+              </Col>
 
-              <InputNumber
-                min={1}
-                step={1}
-                value={ingredient.quantity}
-                onChange={(value) => {
-                  const newIngredients = [...ingredients];
-                  newIngredients[index].quantity = value;
-                  setIngredients(newIngredients);
-                }}
-                style={{ width: isMobile ? '100%' : 100 }}
-              />
+              {/* Количество */}
+              <Col xs={5} md={4}>
+                <InputNumber
+                  min={1}
+                  step={1}
+                  value={ingredient.quantity}
+                  onChange={(value) => {
+                    const newIngredients = [...ingredients];
+                    newIngredients[index].quantity = value;
+                    setIngredients(newIngredients);
+                  }}
+                  style={{ width: '100%' }}
+                />
+              </Col>
 
-              <Select
-                value={ingredient.unit}
-                onChange={(value) => {
-                  const newIngredients = [...ingredients];
-                  newIngredients[index].unit = value;
-                  setIngredients(newIngredients);
-                }}
-                style={{ width: isMobile ? '100%' : 100 }}
-              >
-                {units.map(unit => (
-                  <Option key={unit} value={unit}>{unit}</Option>
-                ))}
-              </Select>
+              {/* Единицы измерения */}
+              <Col xs={5} md={4}>
+                <Select
+                  value={ingredient.unit}
+                  onChange={(value) => {
+                    const newIngredients = [...ingredients];
+                    newIngredients[index].unit = value;
+                    setIngredients(newIngredients);
+                  }}
+                  style={{ width: '100%' }}
+                >
+                  {units.map(unit => (
+                    <Option key={unit} value={unit}>{unit}</Option>
+                  ))}
+                </Select>
+              </Col>
 
-              <Button
-                danger
-                onClick={() => handleRemoveIngredient(index)}
-                icon={<DeleteOutlined />}
-                block={isMobile}
-              />
-            </Space>
+              {/* Кнопка удаления */}
+              <Col xs={3} md={4}>
+                <Button
+                  danger
+                  onClick={() => handleRemoveIngredient(index)}
+                  icon={<DeleteOutlined />}
+                  style={{ width: '100%' }}
+                />
+              </Col>
+            </Row>
           </div>
         ))}
 

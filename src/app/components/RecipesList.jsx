@@ -354,8 +354,20 @@ const RecipesList = ({ dishes, setDishes, allIngredients }) => {
                   }}
                   onClick={() => handleCardClick(dish)}
                   actions={[
-                    <EditOutlined key="edit" onClick={() => handleEditRecipe(dish)} />,
-                    <DeleteOutlined key="delete" onClick={() => handleDeleteRecipe(dish)} />
+                    <EditOutlined
+                      key="edit"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditRecipe(dish);
+                      }}
+                    />,
+                    <DeleteOutlined
+                      key="delete"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteRecipe(dish);
+                      }}
+                    />
                   ]}
                   hoverable
                 >
@@ -422,7 +434,7 @@ const RecipesList = ({ dishes, setDishes, allIngredients }) => {
           dish={selectedRecipe}
           visible={isDishModalVisible}
           onClose={handleDishModalClose}
-          isViewMode={true} // Включаем режим просмотра
+          isViewMode={true}
         />
       )}
 
