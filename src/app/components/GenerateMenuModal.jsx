@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     Modal, Form, Slider, Select, Switch, Tabs, Divider, Space,
-    Tag, Button, Tooltip, Typography, Collapse, Checkbox, InputNumber, Input, Alert
+    Tag, Button, Tooltip, Typography, Collapse, Grid, InputNumber, Input, Alert
 } from 'antd';
 import {
     SettingOutlined, AppstoreOutlined,
@@ -14,19 +14,7 @@ const { Panel } = Collapse;
 
 const daysOfWeek = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 
-const useMobileDetect = () => {
-    const [isMobile, setIsMobile] = useState(false);
-
-    useEffect(() => {
-        const checkMobile = () => setIsMobile(window.matchMedia('(max-width: 768px)').matches);
-
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
-
-    return isMobile;
-};
+const {useBreakpoint} = Grid
 
 const GenerateMenuModal = ({
     isGenerateModalVisible,
@@ -37,7 +25,8 @@ const GenerateMenuModal = ({
     categories,
     cuisines
 }) => {
-    const isMobile = useMobileDetect();
+    const screen = useBreakpoint()
+    const isMobile = screen.xs
     const [activeTab, setActiveTab] = useState('basic');
     const [daySettingsOpen, setDaySettingsOpen] = useState([]);
     const [errors, setErrors] = useState([]);

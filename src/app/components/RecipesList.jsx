@@ -1,12 +1,12 @@
 "use client"
 import React, { useState, useMemo, useEffect } from 'react';
-import { 
-  Card, 
-  Input, 
-  Select, 
-  Modal, 
-  Row, 
-  Col, 
+import {
+  Card,
+  Input,
+  Select,
+  Modal,
+  Row,
+  Col,
   Tag,
   message,
   List,
@@ -15,8 +15,8 @@ import {
   Button,
   Pagination
 } from 'antd';
-import { 
-  EditOutlined, 
+import {
+  EditOutlined,
   DeleteOutlined,
   FilterOutlined,
   ClockCircleOutlined,
@@ -26,6 +26,7 @@ import {
   CloseOutlined
 } from '@ant-design/icons';
 import EditRecipeForm from './EditRecipeForm';
+import DishModal from './DishModal'
 import { useAuth } from '../context/AuthContext'
 
 const { Search } = Input;
@@ -58,6 +59,21 @@ const RecipesList = ({ dishes, setDishes, allIngredients }) => {
     }
     return true;
   });
+
+  const [selectedRecipe, setSelectedRecipe] = useState(null); // Состояние для выбранного рецепта
+  const [isDishModalVisible, setIsDishModalVisible] = useState(false); 
+
+   // Функция для открытия модального окна
+   const handleCardClick = (recipe) => {
+    setSelectedRecipe(recipe);
+    setIsDishModalVisible(true);
+  };
+
+  // Функция для закрытия модального окна
+  const handleDishModalClose = () => {
+    setIsDishModalVisible(false);
+    setSelectedRecipe(null);
+  };
 
   const [filters, setFilters] = useState({
     cookingTime: null,
@@ -175,7 +191,7 @@ const RecipesList = ({ dishes, setDishes, allIngredients }) => {
   }, [filteredDishes, currentPage, pageSize]);
 
   const renderTimeTags = (dish) => (
-    <div style={{ display: 'flex'}}>
+    <div style={{ display: 'flex' }}>
       <Tooltip title="Общее время">
         <Tag color="geekblue">
           <ClockCircleOutlined /> {dish.cookingTime}
@@ -323,13 +339,27 @@ const RecipesList = ({ dishes, setDishes, allIngredients }) => {
                       {renderTimeTags(dish)}
                     </div>
                   }
-                  style={{ height: '100%'}}
+                  style={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}
+                  styles={{
+                    body: {
+                      flex: 1,
+                      padding: 16,
+                      display: 'flex',
+                      flexDirection: 'column'
+                    }
+                  }}
+                  onClick={() => handleCardClick(dish)}
                   actions={[
                     <EditOutlined key="edit" onClick={() => handleEditRecipe(dish)} />,
                     <DeleteOutlined key="delete" onClick={() => handleDeleteRecipe(dish)} />
                   ]}
                   hoverable
                 >
+                  <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 12 }}>
                     {Object.entries({
                       type: dish.type,
@@ -349,6 +379,7 @@ const RecipesList = ({ dishes, setDishes, allIngredients }) => {
 
                   <List
                     dataSource={dish.ingredients.slice(0, 3)}
+                    style={{ flex: 1 }}
                     renderItem={ingredient => (
                       <List.Item>
                         <Text ellipsis style={{ fontSize: 12 }}>
@@ -359,9 +390,10 @@ const RecipesList = ({ dishes, setDishes, allIngredients }) => {
                   />
                   {dish.ingredients.length > 3 && (
                     <Text type="secondary" style={{ fontSize: 12, marginTop: 8 }}>
-                      + еще {dish.ingredients.length - 3} ингредиентов...
+                      + еще {dish.ingredients.length - 3} {dish.ingredients.length - 3 === 1 ? 'ингредиент' : dish.ingredients.length - 3 >= 2 && dish.ingredients.length - 3 <= 4 ? 'ингредиента' : 'ингредиентов'}... 
                     </Text>
                   )}
+                  </div>
                 </Card>
               </Col>
             ))}
@@ -376,7 +408,7 @@ const RecipesList = ({ dishes, setDishes, allIngredients }) => {
                 setPageSize(size);
               }}
               showSizeChanger
-              pageSizeOptions={['6','9','18']}
+              pageSizeOptions={['6', '9', '18']}
               showTotal={(total, range) => `${range[0]}-${range[1]} из ${total}`}
               responsive
             />
@@ -385,6 +417,15 @@ const RecipesList = ({ dishes, setDishes, allIngredients }) => {
       </Row>
 
       {/* Модальные окна */}
+      {selectedRecipe && (
+        <DishModal
+          dish={selectedRecipe}
+          visible={isDishModalVisible}
+          onClose={handleDishModalClose}
+          isViewMode={true} // Включаем режим просмотра
+        />
+      )}
+
       <Modal
         title="Редактирование рецепта"
         open={isEditModalVisible}
@@ -400,6 +441,10 @@ const RecipesList = ({ dishes, setDishes, allIngredients }) => {
           }}
           onCancel={() => setIsEditModalVisible(false)}
           allIngredients={allIngredients}
+          mealTypes={filterOptions.types}
+          categories={filterOptions.categories}
+          preferences={filterOptions.preferences}
+          cuisines={filterOptions.cuisines}
         />
       </Modal>
 

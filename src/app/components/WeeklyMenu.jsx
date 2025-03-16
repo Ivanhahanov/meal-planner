@@ -1,18 +1,18 @@
 "use client"
 import '@ant-design/v5-patch-for-react-19';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Card, Typography, Segmented, Space, Select, Modal, Input, message } from 'antd';
+import { Button, Card, Typography, Segmented, Space, Select, Modal, Input, Grid, message } from 'antd';
 import { useAuth } from '../context/AuthContext'
 import { PlusOutlined, ShoppingCartOutlined, BookOutlined, ScheduleOutlined, SaveOutlined, RobotOutlined } from '@ant-design/icons';
-import DishModal from './DishModal';
 import ShoppingList from './ShoppingList';
 import AddDishModal from './AddDishModal';
+import NewDishModal from './NewDishModal';
 import RecipesList from './RecipesList';
 import MenuList from './MenuList'
 import GenerateMenuModal from './GenerateMenuModal';
 
 const { Title } = Typography;
-
+const { useBreakpoint } = Grid; 
 const daysOfWeek = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 
 
@@ -22,7 +22,7 @@ const MENU_RANGE = process.env.NEXT_PUBLIC_GOOGLE_SHEET_MENU_RANGE || 'Menu!A1:D
 
 
 const WeeklyMenu = () => {
-
+  const screens = useBreakpoint();
   const [menu, setMenu] = useState(() =>
     daysOfWeek.reduce((acc, day) => {
       acc[day] = [];
@@ -30,7 +30,7 @@ const WeeklyMenu = () => {
     }, {})
   );
   const [shoppingList, setShoppingList] = useState([]);
-  const [isDishModalVisible, setIsDishModalVisible] = useState(false);
+  const [isNewDishModalVisible, setIsNewDishModalVisible] = useState(false);
   const [isAddDishModalVisible, setIsAddDishModalVisible] = useState(false);
   const [selectedDay, setSelectedDay] = useState('');
   const [dishes, setDishes] = useState([]);
@@ -395,12 +395,12 @@ const WeeklyMenu = () => {
 
   const showDishModal = (day) => {
     setSelectedDay(day);
-    setIsDishModalVisible(true);
+    setIsAddDishModalVisible(true);
   };
 
   const handleSelectDish = (dish) => {
     addDishToDay(selectedDay, dish);
-    setIsDishModalVisible(false);
+    setIsAddDishModalVisible(false);
   };
 
   const handleAddDish = (newDish) => {
@@ -416,8 +416,6 @@ const WeeklyMenu = () => {
 
   return (
     <div style={{ padding: '24px', backgroundColor: '#fff', minHeight: '100vh', minWidth: '100vw' }}>
-
-      {/* Модальное окно сохранения меню */}
       <Modal
         title="Сохранить меню"
         open={isSaveMenuVisible}
@@ -452,17 +450,16 @@ const WeeklyMenu = () => {
       </div>
 
       {/* Обновляем DishModal для фильтрации */}
-      <DishModal
-        visible={isDishModalVisible}
-        onCancel={() => setIsDishModalVisible(false)}
+      <AddDishModal
+        visible={isAddDishModalVisible}
+        onCancel={() => setIsAddDishModalVisible(false)}
         onSelectDish={handleSelectDish}
         dishes={dishes}
       />
 
-      {/* Обновляем AddDishModal для новых полей */}
-      <AddDishModal
-        visible={isAddDishModalVisible}
-        onCancel={() => setIsAddDishModalVisible(false)}
+      <NewDishModal
+        visible={isNewDishModalVisible}
+        onCancel={() => setIsNewDishModalVisible(false)}
         onAddDish={handleAddDish}
         allIngredients={allIngredients}
         mealTypes={mealTypes}
@@ -493,7 +490,7 @@ const WeeklyMenu = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => setIsAddDishModalVisible(true)}
+            onClick={() => setIsNewDishModalVisible(true)}
           >
             Новое блюдо
           </Button>
@@ -535,13 +532,13 @@ const WeeklyMenu = () => {
                 type="primary"
                 icon={<RobotOutlined />}
                 onClick={() => {
-                  if (preferences.length > 0 && categories.length > 0 && cuisines.length > 0) {
-                    setIsGenerateModalVisible(true);
-                  } else {
-                    message.info('Данные ещё загружаются...');
-                  }
-                }}
-                disabled={preferences.length === 0 || categories.length === 0 || cuisines.length === 0}
+    if (preferences.length > 0 && categories.length > 0 && cuisines.length > 0) {
+      setIsGenerateModalVisible(true);
+    } else {
+      message.info('Данные ещё загружаются...');
+    }
+  }}
+  disabled={preferences.length === 0 || categories.length === 0 || cuisines.length === 0}
               >
                 Сгенерировать меню
               </Button>
@@ -596,7 +593,10 @@ const WeeklyMenu = () => {
                   </div>
                 }
                 styles={{ body: { padding: "24px 10px" } }}
-                style={{ width: 300, margin: '16px 16px 0 0' }}
+                style={{
+                  width: screens.xs ? '100%' : 300,
+                  margin: screens.xs ? '8px 0' : '16px 16px 0 0',  
+                }}
               >
                 <MenuList day={day} menu={menu} updateServings={updateServings} removeDishFromDay={removeDishFromDay}></MenuList>
               </Card>

@@ -1,3 +1,5 @@
+
+
 "use client"
 import React, { useState, useEffect } from 'react';
 import {
@@ -10,7 +12,8 @@ import {
   AutoComplete,
   Row,
   Col,
-  Space
+  Space,
+  Grid
 } from 'antd';
 import {
   DeleteOutlined,
@@ -21,26 +24,33 @@ import {
 import { useAuth } from '../context/AuthContext'
 
 const { Option } = Select;
+const { useBreakpoint } = Grid;
 const units = ['г', 'кг', 'мл', 'л', 'шт', 'зубч', 'ст.л', 'ч.л'];
-const mealTypes = ['Завтрак', 'Обед', 'Ужин'];
-const categories = ['Основное', 'Гарнир', 'Салат', 'Супы'];
-const preferences = ['Мясное', 'Рыбное', 'Вегетарианское', 'Веганское'];
-const cuisines = ['Русская', 'Итальянская', 'Азиатская', 'Средиземноморская'];
 
 const SHEET_ID = process.env.NEXT_PUBLIC_GOOGLE_SHEET_ID;
 const RANGE = process.env.NEXT_PUBLIC_GOOGLE_SHEET_RANGE || 'Recipes!A1:J';
 
-const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
+const EditRecipeForm = ({
+  recipe,
+  onSave,
+  onCancel,
+  allIngredients,
+  mealTypes = [],
+  categories = [],
+  preferences = [],
+  cuisines = []
+}) => {
   const { token, login } = useAuth();
   const [form] = Form.useForm();
   const [ingredients, setIngredients] = useState([]);
   const [loading, setLoading] = useState(false);
   const [originalName, setOriginalName] = useState('');
+  const screens = useBreakpoint();
 
   useEffect(() => {
     if (recipe) {
       setOriginalName(recipe.name);
-      setIngredients(recipe.ingredients);
+      setIngredients(recipe.ingredients || []);
       form.setFieldsValue({
         name: recipe.name,
         cookingTime: recipe.cookingTime,
@@ -53,22 +63,11 @@ const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
     }
   }, [recipe, form]);
 
-  const handleAddIngredient = () => {
-    setIngredients([...ingredients, { name: '', quantity: 1, unit: 'г' }]);
-  };
-
-  const handleRemoveIngredient = (index) => {
-    setIngredients(ingredients.filter((_, i) => i !== index));
-  };
-
-  // Автозаполнение для ингредиентов
-  const ingredientOptions = allIngredients.map(ing => ({ value: ing }));
-
   const handleSave = async () => {
     try {
       await form.validateFields();
       const values = form.getFieldsValue();
-
+  
       const updatedRecipe = {
         ...values,
         cookingTime: Number(values.cookingTime),
@@ -83,7 +82,7 @@ const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
         }))
       };
       setLoading(true);
-
+  
       // 1. Получаем данные листа
       const sheetInfo = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?fields=sheets(properties,data.rowData.values(formattedValue))`,
@@ -91,20 +90,20 @@ const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
       );
       const sheetData = await sheetInfo.json();
       const sheetId = sheetData.sheets[0].properties.sheetId;
-
+  
       // 2. Находим все строки для этого рецепта
       const rowsResponse = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const { values: allRows } = await rowsResponse.json();
-
+  
       // 3. Определяем индексы строк для удаления
       const deleteRowIndexes = allRows
         .map((row, index) => row[0] === originalName ? index : -1)
         .filter(index => index !== -1)
         .sort((a, b) => b - a); // Важно сортировать в обратном порядке
-
+  
       // 4. Формируем запросы на удаление
       const deleteRequests = deleteRowIndexes.map(index => ({
         deleteDimension: {
@@ -116,7 +115,7 @@ const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
           }
         }
       }));
-
+  
       // 5. Формируем новые данные для добавления
       const newRows = updatedRecipe.ingredients.map(ing => [
         updatedRecipe.name,
@@ -130,7 +129,7 @@ const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
         ing.quantity,
         ing.unit
       ]);
-
+  
       // 6. Формируем запросы на добавление
       const appendRequest = {
         appendCells: {
@@ -145,10 +144,10 @@ const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
           fields: "userEnteredValue"
         }
       };
-
+  
       // 7. Собираем все запросы в один batch
       const requests = [...deleteRequests, appendRequest];
-
+  
       // 8. Отправляем batch update
       const batchResponse = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}:batchUpdate`,
@@ -161,20 +160,20 @@ const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
           body: JSON.stringify({ requests })
         }
       );
-
+  
       const batchData = await batchResponse.json();
       console.log('Batch Update Result:', batchData);
-
+  
       if (!batchResponse.ok) {
         throw new Error(batchData.error?.message || 'Ошибка обновления данных');
       }
-
+  
       // 9. Обновляем локальное состояние
       onSave(updatedRecipe);
       Modal.success({
         content: 'Рецепт успешно обновлен',
       });
-
+  
     } catch (error) {
       console.error('Update Error:', error);
       Modal.error({
@@ -186,10 +185,24 @@ const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
     }
   };
 
+  const handleAddIngredient = () => {
+    setIngredients(prev => [...prev, { name: '', quantity: 1, unit: 'г' }]);
+  };
+
+  const handleRemoveIngredient = (index) => {
+    setIngredients(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const ingredientOptions = allIngredients.map(ing => ({ value: ing }));
+
+  // Стили для мобильных устройств
+  const mobileStyle = !screens.md ? { width: '100%' } : {};
+  const isMobile = !screens.md;
+
   return (
     <Form form={form} layout="vertical">
-      <Row gutter={16}>
-        <Col span={24}>
+      <Row gutter={[16, 8]}>
+        <Col xs={24} md={24}>
           <Form.Item
             name="name"
             label="Название рецепта"
@@ -199,7 +212,7 @@ const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
           </Form.Item>
         </Col>
 
-        <Col span={12}>
+        <Col xs={24} md={12}>
           <Form.Item
             name="cookingTime"
             label="Общее время (мин)"
@@ -213,7 +226,7 @@ const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
           </Form.Item>
         </Col>
 
-        <Col span={12}>
+        <Col xs={24} md={12}>
           <Form.Item
             name="handsOnTime"
             label="Активное время (мин)"
@@ -225,9 +238,15 @@ const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
               placeholder="15"
             />
           </Form.Item>
-        </Col><Col span={24}>
+        </Col>
+
+        <Col xs={24} md={24}>
           <Form.Item name="type" label="Тип приема пищи">
-            <Select mode="multiple">
+            <Select
+              mode="multiple"
+              maxTagCount={isMobile ? 'responsive' : undefined}
+              style={mobileStyle}
+            >
               {mealTypes.map(type => (
                 <Option key={type} value={type}>{type}</Option>
               ))}
@@ -235,9 +254,13 @@ const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
           </Form.Item>
         </Col>
 
-        <Col span={24}>
+        <Col xs={24} md={24}>
           <Form.Item name="category" label="Категория блюда">
-            <Select mode="multiple">
+            <Select
+              mode="multiple"
+              maxTagCount={isMobile ? 'responsive' : undefined}
+              style={mobileStyle}
+            >
               {categories.map(cat => (
                 <Option key={cat} value={cat}>{cat}</Option>
               ))}
@@ -245,9 +268,13 @@ const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
           </Form.Item>
         </Col>
 
-        <Col span={24}>
+        <Col xs={24} md={24}>
           <Form.Item name="preference" label="Предпочтения">
-            <Select mode="multiple">
+            <Select
+              mode="multiple"
+              maxTagCount={isMobile ? 'responsive' : undefined}
+              style={mobileStyle}
+            >
               {preferences.map(pref => (
                 <Option key={pref} value={pref}>{pref}</Option>
               ))}
@@ -255,9 +282,13 @@ const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
           </Form.Item>
         </Col>
 
-        <Col span={24}>
+        <Col xs={24} md={24}>
           <Form.Item name="cuisine" label="Тип кухни">
-            <Select mode="multiple">
+            <Select
+              mode="multiple"
+              maxTagCount={isMobile ? 'responsive' : undefined}
+              style={mobileStyle}
+            >
               {cuisines.map(cuisine => (
                 <Option key={cuisine} value={cuisine}>{cuisine}</Option>
               ))}
@@ -269,7 +300,11 @@ const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
       <Form.Item label="Ингредиенты">
         {ingredients.map((ingredient, index) => (
           <div key={index} style={{ marginBottom: 12 }}>
-            <Space align="start" style={{ width: '100%' }}>
+            <Space
+              align="start"
+              direction={isMobile ? 'vertical' : 'horizontal'}
+              style={{ width: '100%' }}
+            >
               <AutoComplete
                 options={ingredientOptions}
                 placeholder="Ингредиент"
@@ -279,7 +314,7 @@ const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
                   newIngredients[index].name = value;
                   setIngredients(newIngredients);
                 }}
-                style={{ width: 200 }}
+                style={{ width: isMobile ? '100%' : 200 }}
                 filterOption={(inputValue, option) =>
                   option.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
                 }
@@ -294,7 +329,7 @@ const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
                   newIngredients[index].quantity = value;
                   setIngredients(newIngredients);
                 }}
-                style={{ width: 100 }}
+                style={{ width: isMobile ? '100%' : 100 }}
               />
 
               <Select
@@ -304,7 +339,7 @@ const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
                   newIngredients[index].unit = value;
                   setIngredients(newIngredients);
                 }}
-                style={{ width: 100 }}
+                style={{ width: isMobile ? '100%' : 100 }}
               >
                 {units.map(unit => (
                   <Option key={unit} value={unit}>{unit}</Option>
@@ -315,7 +350,7 @@ const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
                 danger
                 onClick={() => handleRemoveIngredient(index)}
                 icon={<DeleteOutlined />}
-                shape="circle"
+                block={isMobile}
               />
             </Space>
           </div>
@@ -325,25 +360,30 @@ const EditRecipeForm = ({ recipe, onSave, onCancel, allIngredients }) => {
           type="dashed"
           onClick={handleAddIngredient}
           icon={<PlusOutlined />}
-          style={{ width: '100%' }}
+          block
         >
           Добавить ингредиент
         </Button>
       </Form.Item>
 
       <Form.Item>
-        <Space>
+        <Space
+          direction={isMobile ? 'vertical' : 'horizontal'}
+          style={{ width: '100%' }}
+        >
           <Button
             type="primary"
             onClick={handleSave}
             loading={loading}
             icon={<SaveOutlined />}
+            block={isMobile}
           >
             Сохранить
           </Button>
           <Button
             onClick={onCancel}
             icon={<CloseOutlined />}
+            block={isMobile}
           >
             Отмена
           </Button>
