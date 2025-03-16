@@ -110,7 +110,6 @@ const RecipesList = ({ dishes, setDishes, allIngredients }) => {
         if (!token) throw new Error('Авторизация не выполнена');
       }
 
-
       const getUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}`;
       const response = await fetch(getUrl, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -369,7 +368,6 @@ const RecipesList = ({ dishes, setDishes, allIngredients }) => {
                       }}
                     />
                   ]}
-                  hoverable
                 >
                   <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 12 }}>

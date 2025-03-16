@@ -12,7 +12,7 @@ import MenuList from './MenuList'
 import GenerateMenuModal from './GenerateMenuModal';
 
 const { Title } = Typography;
-const { useBreakpoint } = Grid; 
+const { useBreakpoint } = Grid;
 const daysOfWeek = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 
 
@@ -532,13 +532,13 @@ const WeeklyMenu = () => {
                 type="primary"
                 icon={<RobotOutlined />}
                 onClick={() => {
-    if (preferences.length > 0 && categories.length > 0 && cuisines.length > 0) {
-      setIsGenerateModalVisible(true);
-    } else {
-      message.info('Данные ещё загружаются...');
-    }
-  }}
-  disabled={preferences.length === 0 || categories.length === 0 || cuisines.length === 0}
+                  if (preferences.length > 0 && categories.length > 0 && cuisines.length > 0) {
+                    setIsGenerateModalVisible(true);
+                  } else {
+                    message.info('Данные ещё загружаются...');
+                  }
+                }}
+                disabled={preferences.length === 0 || categories.length === 0 || cuisines.length === 0}
               >
                 Сгенерировать меню
               </Button>
@@ -576,13 +576,19 @@ const WeeklyMenu = () => {
 
           {/* Карточки с днями недели */}
           <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-            {daysOfWeek.map((day) => (
+            {daysOfWeek.map((day, dayIndex) => (
               <Card
                 key={day}
                 loading={loading}
                 title={
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    {day}
+                    <span style={{
+                      color: dayIndex > 4 ? '#ff4d4f' : '#1890ff',
+                      fontWeight: 500,
+                      fontSize: 17,
+                    }}>
+                      {day}
+                    </span>
                     <Button
                       onClick={() => showDishModal(day)}
                       icon={<PlusOutlined />}
@@ -595,7 +601,7 @@ const WeeklyMenu = () => {
                 styles={{ body: { padding: "12px 10px" } }}
                 style={{
                   width: screens.xs ? '100%' : 339,
-                  margin: screens.xs ? '8px 0' : '16px 16px 0 0',  
+                  margin: screens.xs ? '8px 0' : '16px 16px 0 0',
                 }}
               >
                 <MenuList day={day} menu={menu} updateServings={updateServings} removeDishFromDay={removeDishFromDay}></MenuList>
