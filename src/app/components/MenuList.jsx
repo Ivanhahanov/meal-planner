@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { List, Button, Popconfirm } from 'antd';
+import { List, Button, Popconfirm, Grid } from 'antd';
 import { MinusOutlined, PlusOutlined, CloseOutlined } from '@ant-design/icons';
 import styles from './MenuList.module.css';
 import DishModal from './DishModal';
 
+const { useBreakpoint } = Grid;
+
 const MenuList = ({ menu, updateServings, removeDishFromDay, day }) => {
+  const screen = useBreakpoint()
   const [selectedItem, setSelectedItem] = useState(null);
   useEffect(() => {
     if (selectedItem) {
@@ -20,17 +23,17 @@ const MenuList = ({ menu, updateServings, removeDishFromDay, day }) => {
         dataSource={menu[day]}
         renderItem={(item) => (
           <div 
-            className={styles.menuItem}
+          className={`${styles.menuItem} ${screen.xs ? styles.mobile : ''}`}
             onClick={() => setSelectedItem(item)}
             style={{ cursor: 'pointer' }}
           >
             <div className={styles.menuContent}>
               <div className={styles.dishName}>
-                <span style={{ marginRight: 8, color: '#666', fontSize: 12 }}>
+                <span style={{ marginRight: 8, color: '#666', fontSize: 15 }}>
                   {item.servings}x
                 </span>
-                <span style={{ fontWeight: 500 }}>{item.dish.name}</span>
-                <span style={{ marginLeft: 8, color: '#666', fontSize: 12 }}>
+                <span style={{ fontWeight: 450, fontSize: 15}}>{item.dish.name}</span>
+                <span style={{ marginLeft: 8, color: '#666', fontSize: 15 }}>
                   {item.dish.cookingTime}'
                 </span>
               </div>
@@ -81,7 +84,6 @@ const MenuList = ({ menu, updateServings, removeDishFromDay, day }) => {
         dish={selectedItem?.dish}
         visible={!!selectedItem}
         onClose={() => setSelectedItem(null)}
-        // Добавляем пропсы для управления порциями и удалением
         servings={selectedItem?.servings}
         day={day}
         updateServings={updateServings}

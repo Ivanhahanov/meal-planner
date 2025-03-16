@@ -1,6 +1,24 @@
+.menuItem.mobile:hover {
+  background: none !important;
+}
+
+.menuItem.mobile:hover .menuActions {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.menuItem.mobile .menuActions {
+  display: none !important;
+}
+
+.menuItem.mobile:hover .dishName {
+  margin-right: 0 !important;
+  white-space: normal !important;
+}
+
 .menuItem {
   position: relative;
-  padding: 2px 0;
+  padding: 6px 0;
   overflow: hidden;
 }
 
@@ -10,7 +28,7 @@
 
 .menuContent {
   display: flex;
-  align-items: flex-start; /* Выравниваем по верхнему краю */
+  align-items: flex-start;
   gap: 8px;
   width: 100%;
  
@@ -19,16 +37,16 @@
 .dishName {
   flex: 1;
   min-width: 0;
-  white-space: normal; /* Разрешаем перенос текста */
+  white-space: normal; 
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .menuItem:hover .dishName {
-  white-space: nowrap; /* Запрещаем перенос при наведении */
+  white-space: nowrap; 
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-right: 80px; /* Освобождаем место для кнопок */
+  margin-right: 80px;
 }
 
 .menuActions {

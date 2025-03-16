@@ -592,9 +592,9 @@ const WeeklyMenu = () => {
                     </Button>
                   </div>
                 }
-                styles={{ body: { padding: "24px 10px" } }}
+                styles={{ body: { padding: "12px 10px" } }}
                 style={{
-                  width: screens.xs ? '100%' : 300,
+                  width: screens.xs ? '100%' : 339,
                   margin: screens.xs ? '8px 0' : '16px 16px 0 0',  
                 }}
               >

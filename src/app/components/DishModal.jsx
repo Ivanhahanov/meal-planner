@@ -26,6 +26,7 @@ import {
 } from '@ant-design/icons';
 
 const { Text } = Typography;
+const { useBreakpoint } = Grid;
 
 const TAG_CONFIG = {
   type: { icon: <AppstoreOutlined />, color: 'blue' },
@@ -33,8 +34,6 @@ const TAG_CONFIG = {
   preference: { icon: <FireOutlined />, color: 'orange' },
   cuisine: { icon: <GlobalOutlined />, color: 'purple' }
 };
-
-const { useBreakpoint } = Grid;
 
 
 const DishModal = ({
