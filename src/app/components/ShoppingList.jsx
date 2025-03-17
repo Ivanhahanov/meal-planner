@@ -96,6 +96,9 @@ const ShoppingList = ({ menu, daysOfWeek=[] }) => {
 
   const copyToClipboard = () => {
     const listString = shoppingList
+      .filter(ingredient => {
+        return !checkedItems[ingredient.name];
+      })
       .map(ingredient => `${ingredient.name} - ${ingredient.quantity} ${ingredient.unit}`)
       .join('\n');
 
