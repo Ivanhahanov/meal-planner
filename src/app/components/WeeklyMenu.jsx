@@ -29,7 +29,7 @@ const WeeklyMenu = () => {
       return acc;
     }, {})
   );
-  
+
   const [isNewDishModalVisible, setIsNewDishModalVisible] = useState(false);
   const [isAddDishModalVisible, setIsAddDishModalVisible] = useState(false);
   const [selectedDay, setSelectedDay] = useState('');
@@ -213,52 +213,6 @@ const WeeklyMenu = () => {
     }
   }, [savedMenus, currentMenuName]);
 
-  const loadMenuFromSheets = async (menuName, isInitialLoad = false) => {
-    try {
-      // Ждем загрузки рецептов
-      if (dishes.length === 0) {
-        await new Promise(resolve => {
-          const interval = setInterval(() => {
-            if (dishes.length > 0) {
-              clearInterval(interval);
-              resolve();
-            }
-          }, 100);
-        });
-      }
-
-      const response = await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${MENU_RANGE}`,
-        { headers: { 'Authorization': `Bearer ${token}` } }
-      );
-
-      const data = await response.json();
-      const rows = data.values || [];
-
-      const newMenu = daysOfWeek.reduce((acc, day) => ({ ...acc, [day]: [] }), {});
-
-      rows.filter(row => row[0]?.trim() === menuName?.trim()).forEach(row => {
-        const [_, day, dishName, servings] = row;
-        const dish = dishes.find(d => d.name?.trim() === dishName?.trim());
-
-        if (dish) {
-          newMenu[day].push({
-            dish,
-            servings: parseInt(servings, 10) || 1
-          });
-        }
-      });
-
-      setMenu(newMenu);
-      setCurrentMenuName(menuName);
-
-      if (!isInitialLoad) message.success('Меню загружено!');
-    } catch (error) {
-      console.error('Ошибка загрузки:', error);
-      message.error('Ошибка загрузки меню');
-    }
-  };
-
   const updateIngredients = (dishes) => {
     const ingredientsSet = new Set();
     const mealTypesSet = new Set();
@@ -326,8 +280,6 @@ const WeeklyMenu = () => {
       [day]: prevMenu[day].filter(item => item.dish.name !== dishName)
     }));
   };
-
-  
 
   const showDishModal = (day) => {
     setSelectedDay(day);
