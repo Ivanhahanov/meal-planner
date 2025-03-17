@@ -29,7 +29,7 @@ const WeeklyMenu = () => {
       return acc;
     }, {})
   );
-  const [shoppingList, setShoppingList] = useState([]);
+  
   const [isNewDishModalVisible, setIsNewDishModalVisible] = useState(false);
   const [isAddDishModalVisible, setIsAddDishModalVisible] = useState(false);
   const [selectedDay, setSelectedDay] = useState('');
@@ -327,71 +327,7 @@ const WeeklyMenu = () => {
     }));
   };
 
-  const unitConversions = {
-    'г': { type: 'weight', baseUnit: 'кг', factor: 0.001 },
-    'кг': { type: 'weight', baseUnit: 'кг', factor: 1 },
-    'мл': { type: 'volume', baseUnit: 'л', factor: 0.001 },
-    'л': { type: 'volume', baseUnit: 'л', factor: 1 },
-    'шт': { type: 'count', baseUnit: 'шт', factor: 1 },
-  };
-
-  const getDisplayUnitAndQuantity = (baseQuantity, type) => {
-    if (type === 'weight') {
-      if (baseQuantity >= 1) {
-        return { unit: 'кг', quantity: parseFloat(baseQuantity.toFixed(2)) };
-      }
-      return { unit: 'г', quantity: parseFloat((baseQuantity * 1000).toFixed(2)) };
-    }
-
-    if (type === 'volume') {
-      if (baseQuantity >= 1) {
-        return { unit: 'л', quantity: parseFloat(baseQuantity.toFixed(2)) };
-      }
-      return { unit: 'мл', quantity: parseFloat((baseQuantity * 1000).toFixed(2)) };
-    }
-
-    return { unit: 'шт', quantity: baseQuantity };
-  };
-
-  const generateShoppingList = () => {
-    const allIngredients = Object.values(menu).flatMap(dayDishes =>
-      dayDishes.flatMap(({ dish, servings }) =>
-        dish.ingredients.map(ing => ({
-          ...ing,
-          quantity: ing.quantity * servings
-        }))
-      )
-    );
-
-    const groupedIngredients = allIngredients.reduce((acc, ingredient) => {
-      const { name, quantity, unit = 'шт' } = ingredient;
-      const conversion = unitConversions[unit] || unitConversions['шт'];
-      const key = `${name}_${conversion.type}`;
-
-      if (!acc[key]) {
-        acc[key] = {
-          name,
-          type: conversion.type,
-          total: 0,
-          baseUnit: conversion.baseUnit
-        };
-      }
-
-      acc[key].total += quantity * conversion.factor;
-      return acc;
-    }, {});
-
-    const shoppingList = Object.values(groupedIngredients).map(item => {
-      const { unit, quantity } = getDisplayUnitAndQuantity(item.total, item.type);
-      return {
-        name: item.name,
-        quantity,
-        unit
-      };
-    });
-
-    setShoppingList(shoppingList);
-  };
+  
 
   const showDishModal = (day) => {
     setSelectedDay(day);
@@ -411,8 +347,6 @@ const WeeklyMenu = () => {
       return Array.from(updatedIngredients);
     });
   };
-
-
 
   return (
     <div style={{ padding: '24px', backgroundColor: '#fff', minHeight: '100vh', minWidth: '100vw' }}>
@@ -498,7 +432,6 @@ const WeeklyMenu = () => {
             type="primary"
             icon={<ShoppingCartOutlined />}
             onClick={() => {
-              generateShoppingList();
               setActiveSection('shopping');
             }}
           >
@@ -612,7 +545,7 @@ const WeeklyMenu = () => {
       )}
 
       {activeSection === 'shopping' && (
-        <ShoppingList shoppingList={shoppingList} />
+        <ShoppingList menu={menu} daysOfWeek={daysOfWeek} />
       )}
 
       {activeSection === 'recipes' && (
