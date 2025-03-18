@@ -17,8 +17,6 @@ const PerekrestokRuleModal = ({ visible, ingredient, onSave, onCancel, authKey, 
   const [rulePreview, setRulePreview] = useState(null);
   const [form] = Form.useForm();
 
-  console.log(ingredient)
-
   useEffect(() => {
     if (visible && ingredient) {
       setQuery(ingredient.name);
@@ -191,7 +189,7 @@ const PerekrestokRuleModal = ({ visible, ingredient, onSave, onCancel, authKey, 
 
   return (
     <Modal
-      title={`Правило для: ${ingredient?.name} (${ingredient?.quantity}${ingredient?.unit})`}
+      title={`Правило для: ${ingredient?.name} (${ingredient.quantity}${ingredient?.unit})`}
       open={visible}
       onCancel={onCancel}
       footer={null}

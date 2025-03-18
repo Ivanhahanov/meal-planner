@@ -441,19 +441,20 @@ const PerekrestokCart = ({ ingredients }) => {
                     renderItem={item => (
                       <List.Item>
                         <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                          
+                          <Text>{item.name}</Text>
+                          
                           <div>
+                          <Text type="secondary">{item.quantity} {item.unit}</Text>
                           <Button
                             icon={<EditOutlined />}
-                            type="text"
                             onClick={() => {
                               setSelectedIngredient(item);
                               setModalVisible(true);
                             }}
-                            style={{ marginRight: 4 }}
+                            style={{ marginLeft: 8 }}
                           />
-                          <Text>{item.name}</Text>
                           </div>
-                          <Text type="secondary">{item.quantity} {item.unit}</Text>
                         </Space>
                       </List.Item>
                     )}
@@ -501,7 +502,7 @@ const PerekrestokCart = ({ ingredients }) => {
         authKey={apiKey}
       />
     </Spin>
-  );
+  )
 };
 
 export default PerekrestokCart;

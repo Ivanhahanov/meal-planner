@@ -205,7 +205,6 @@ const ShoppingList = ({ menu, daysOfWeek = [] }) => {
             dataSource={shoppingList}
             renderItem={(ingredient) => {
               const key = `${ingredient.name}_${ingredient.type}`;
-              const isEdited = !!editedQuantities[key];
               const currentBaseTotal = editedQuantities[key]?.baseTotal ?? ingredient.baseTotal;
               const originalDisplay = getDisplayUnitAndQuantity(ingredient.baseTotal, ingredient.type);
               const currentDisplay = getDisplayUnitAndQuantity(currentBaseTotal, ingredient.type);
@@ -307,7 +306,7 @@ const ShoppingList = ({ menu, daysOfWeek = [] }) => {
             }}
           />
         </>
-      )};
+      )}
     </Card>
   );
 };
