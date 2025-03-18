@@ -1,13 +1,13 @@
 "use client"
 import { useState, useEffect, useRef } from 'react';
-import { Input, Button, List, Space, Typography, Spin, Statistic } from 'antd';
-import { InfoCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, ShoppingCartOutlined } from '@ant-design/icons';
+import { Input, Button, List, Space, Typography, Spin, Statistic, Tag, Collapse } from 'antd';
+import { InfoCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, CaretRightOutlined } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
 
 const { Text } = Typography;
-
+const { Panel } = Collapse;
 const SHEET_ID = process.env.NEXT_PUBLIC_GOOGLE_SHEET_ID;
-const INGREDIENTS_RANGE = process.env.NEXT_PUBLIC_GOOGLE_SHEET_INGREDIENTS_RANGE || 'Convert!A2:E';
+const INGREDIENTS_RANGE = process.env.NEXT_PUBLIC_GOOGLE_SHEET_INGREDIENTS_RANGE || 'Convert!A1:E';
 const CACHE_KEY = 'perekrestok_mapping_cache';
 
 const PerekrestokCart = ({ ingredients }) => {
@@ -15,18 +15,17 @@ const PerekrestokCart = ({ ingredients }) => {
   const [apiKey, setApiKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState([]);
+  const [unconvertedIngredients, setUnconvertedIngredients] = useState([]);
   const [cartData, setCartData] = useState(null);
   const [items, setItems] = useState({});
   const [mapping, setMapping] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const initialLoad = useRef(true);
 
-  // Загрузка и кэширование данных
   useEffect(() => {
     const loadData = async () => {
       try {
         const cachedData = sessionStorage.getItem(CACHE_KEY);
-
         if (cachedData) {
           setMapping(JSON.parse(cachedData));
           setIsLoading(false);
@@ -66,82 +65,86 @@ const PerekrestokCart = ({ ingredients }) => {
 
   useEffect(() => {
     const convertIngredients = () => {
-      const converted = ingredients
-        .map(ingredient => {
-          const rule = mapping[ingredient.name];
-          if (!rule) return null;
+      const converted = [];
+      const unconverted = [];
 
-          let requiredBase;
-          // Конвертируем все в базовые единицы (граммы или миллилитры)
-          switch (ingredient.unit) {
-            case 'кг':
-              requiredBase = ingredient.quantity * 1000; // кг → г
-              break;
-            case 'г':
-              requiredBase = ingredient.quantity;
-              break;
-            case 'л':
-              requiredBase = ingredient.quantity * 1000; // литры → мл
-              break;
-            case 'мл':
-              requiredBase = ingredient.quantity;
-              break;
-            case 'шт':
-              requiredBase = ingredient.quantity;
-              break;
-            default:
-              return null;
-          }
+      ingredients.forEach(ingredient => {
+        // Проверяем наличие правила конвертации для ингредиента
+        const rule = mapping[ingredient.name];
+        if (!rule) {
+          unconverted.push(ingredient);
+          return;
+        }
 
-          // Определяем тип конвертации
-          const isLiquid = ['л', 'мл'].includes(rule.unit);
-          const isWeight = ['кг', 'г'].includes(rule.unit);
-          const isPieces = rule.unit === 'шт';
+        // Проверяем поддерживаемые единицы измерения
+        let requiredBase;
+        switch (ingredient.unit) {
+          case 'кг':
+            requiredBase = ingredient.quantity * 1000; // Конвертируем кг в граммы
+            break;
+          case 'г':
+            requiredBase = ingredient.quantity;
+            break;
+          case 'л':
+            requiredBase = ingredient.quantity * 1000; // Конвертируем литры в миллилитры
+            break;
+          case 'мл':
+            requiredBase = ingredient.quantity;
+            break;
+          case 'шт':
+            requiredBase = ingredient.quantity; // Штучные товары
+            break;
+          default:
+            unconverted.push(ingredient); // Неподдерживаемая единица измерения
+            return;
+        }
 
-          // Нормализуем packageSize для жидкостей
-          let packageSize = rule.packageSize;
-          if (isLiquid && rule.unit === 'л') {
-            packageSize *= 1000; // конвертируем литры в мл
-          }
+        // Обрабатываем специальные правила для разных типов продуктов
+        const isPieces = rule.unit.toLowerCase() === 'шт';
+        let packageSize = rule.packageSize;
 
-          // Рассчитываем необходимое количество упаковок
-          let packages;
-          if (rule.rounding === 'exact') {
-            packages = requiredBase / packageSize;
-          } else {
-            packages = Math.ceil(requiredBase / packageSize);
-          }
+        // Конвертация литров в миллилитры для расчетов
+        if (rule.unit.toLowerCase() === 'л' && !isPieces) {
+          packageSize *= 1000;
+        }
 
-          // Рассчитываем amount для API
-          let amount;
-          if (isPieces) {
-            // 1 шт в API = 1000 единиц
-            amount = packages * 1000;
-          } else if (isLiquid) {
-            // Для жидкостей используем мл напрямую
-            amount = packages * packageSize;
-          } else {
-            // Для весовых товаров используем граммы
-            amount = packages * packageSize;
-          }
+        let packages, amount, displayUnit;
 
-          // Формируем объект продукта
-          return {
-            id: rule.id,
-            name: ingredient.name,
-            originalName: ingredient.name,
-            amount: amount,
-            unit: rule.unit,
-            packageSize: rule.packageSize,
-            required: ingredient.quantity,
-            originalUnit: ingredient.unit,
-            packages: packages,
-            convertedUnit: isLiquid ? 'мл' : 'г'
-          };
-        })
-        .filter(Boolean);
+        if (rule.rounding === 'exact') {
+          // Продукты на развес без упаковки
+          packages = 1;
+          amount = requiredBase;
+          displayUnit = ingredient.unit; // Сохраняем оригинальную единицу
+        } else {
+          // Расчет для упакованных продуктов
+          packages = Math.ceil(requiredBase / packageSize);
+          amount = isPieces ? packages * 1000 : packages * 1000;
+          displayUnit = isPieces ? 'шт' : rule.unit.toLowerCase() === 'л' ? 'мл' : rule.unit;
+        }
 
+        // Формируем объект конвертированного продукта
+        const convertedIngredient = {
+          id: rule.id,
+          name: ingredient.name,
+          originalName: ingredient.name,
+          amount: amount,
+          price: 0,
+          unit: displayUnit,
+          packageSize: packageSize,
+          required: ingredient.quantity,
+          originalUnit: ingredient.unit,
+          packages: packages,
+          convertedUnit: displayUnit,
+          isPieces: isPieces,
+          isExact: rule.rounding === 'exact'
+        };
+
+        converted.push(convertedIngredient);
+      });
+
+      // Обновляем состояния
       setProducts(converted);
+      setUnconvertedIngredients(unconverted);
     };
 
     if (Object.keys(mapping).length > 0) convertIngredients();
@@ -168,19 +171,52 @@ const PerekrestokCart = ({ ingredients }) => {
         headers: { 'auth': apiKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: Number(amount) })
       });
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      const data = await response.json();
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (response.status === 412 && errorData.error?.code === 'OUT_OF_STOCK') {
+          updateOperation(id, 'error', 'Нет в наличии', amount);
+          return;
+        }
+        throw new Error(errorData.error?.message || 'Unknown API error');
+      }
+
+      const data = await response.json();
       setItems(prev => {
         const newItems = { ...prev };
+        const ourProductIds = new Set(products.map(p => Number(p.id)));
+
         data.content?.items?.forEach(item => {
-          if (item.product?.id) {
-            newItems[item.product.id] = {
-              ...prev[item.product.id],
-              id: item.product.id,
+          const productId = item.product?.id;
+          if (!productId) return;
+
+          const isOutOfStock = item.state === 'out_of_stock' ||
+            item.product.balanceState === 'sold-out' ||
+            item.price === 0;
+
+          if (ourProductIds.has(productId)) {
+            newItems[productId] = {
+              ...prev[productId],
+              title: item.product.title,
               price: item.price / 100 || 0,
               amount: item.amount || 0,
-              status: 'success'
+              status: isOutOfStock ? 'error' : 'success',
+              message: isOutOfStock ? 'Нет в наличии' : '',
+              isExternal: false
+            };
+          } else {
+            newItems[productId] = {
+              id: productId,
+              title: item.product.title,
+              price: item.price / 100 || 0,
+              amount: item.amount || 0,
+              status: isOutOfStock ? 'error' : 'success',
+              message: isOutOfStock ? 'Нет в наличии' : '',
+              isExternal: true,
+              unit: item.product.masterData.unitName === 'кг' ? 'г' :
+                item.product.masterData.unitName === 'л' ? 'мл' :
+                  item.product.masterData.unitName,
+              packageSize: item.product.masterData.quantum / 1000
             };
           }
         });
@@ -208,14 +244,50 @@ const PerekrestokCart = ({ ingredients }) => {
     setLoading(false);
   };
 
-  const statusIcon = (status) => {
+  const statusIcon = (status, message) => {
     switch (status) {
-      case 'success': return <CheckCircleOutlined style={{ color: '#52c41a' }} />;
-      case 'error': return <CloseCircleOutlined style={{ color: '#ff4d4f' }} />;
-      case 'processing': return <Spin size="small" />;
-      default: return <span style={{ opacity: 0.5 }}>Ожидает</span>;
+      case 'success':
+        return <CheckCircleOutlined style={{ color: '#52c41a' }} />;
+      case 'error':
+        return (
+          <Space>
+            <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
+            <Text type="danger">{message}</Text>
+          </Space>
+        );
+      case 'processing':
+        return <Spin size="small" />;
+      default:
+        return <span style={{ opacity: 0.5 }}>Ожидает</span>;
     }
   };
+
+  const renderItem = (item) => (
+    <List.Item>
+      <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+        <div>
+          <Text strong delete={item.status === 'error'}>
+            {item.title ? item.title : item.name}
+            {item.isExternal && <Tag color="blue" style={{ marginLeft: 8 }}>Внешний</Tag>}
+          </Text>
+          <br />
+          <Text type="secondary" delete={item.status === 'error'}>
+            {item.isExternal
+              ? `${item.amount} ${item.unit}`
+              : item.isExact
+                ? `${item.required} ${item.originalUnit}` // Для продуктов на развес
+                : `${item.required}${item.originalUnit} → ${item.packages} уп. × ${item.packageSize}${item.convertedUnit}`}
+          </Text>
+        </div>
+        <Space>
+          {item.price !== 0 && item.status !== 'error' && (
+            <Text strong>{(item.price * (item.amount / 1000)).toFixed(2)} ₽</Text>
+          )}
+          {statusIcon(item.status, item.message)}
+        </Space>
+      </Space>
+    </List.Item>
+  );
 
   return (
     <Spin
@@ -237,28 +309,43 @@ const PerekrestokCart = ({ ingredients }) => {
         />
         <List
           dataSource={Object.values(items)}
-          renderItem={item => (
-            <List.Item>
-              <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-                <div>
-                  <Text strong>{item.name}</Text>
-                  <br />
-                  <Text type="secondary">
-                    {item.packageSize === 1
-                      ? `${item.required}${item.unit}`
-                      : `${item.required}g → ${item.packages} уп. × ${item.packageSize}g`}
-                  </Text>
-                </div>
-                <Space>
-                  {item.price && (
-                    <Text strong>{(item.price * (item.amount / 1000)).toFixed(2)} ₽</Text>
-                  )}
-                  {statusIcon(item.status)}
-                </Space>
-              </Space>
-            </List.Item>
-          )}
+          renderItem={renderItem}
         />
+
+        {unconvertedIngredients.length > 0 && (
+          <Collapse
+            bordered={false}
+            ghost
+            // expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
+            className="unconverted-collapse"
+            items={[
+              {
+                key: '1',
+                label: (
+                  <span className="unconverted-header">
+                    Не удалось конвертировать {unconvertedIngredients.length} ингредиентов
+                  </span>
+                ),
+                children: (
+                  <List
+                    size="small"
+                    dataSource={unconvertedIngredients}
+                    renderItem={item => (
+                      <List.Item>
+                        <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                          <Text>{item.name}</Text>
+                          <Text type="secondary">{item.quantity} {item.unit}</Text>
+                        </Space>
+                      </List.Item>
+                    )}
+                  />
+                ),
+                className: 'unconverted-panel',
+                showArrow: true
+              }
+            ]}
+          />
+        )}
 
         {cartData?.invoice?.summaryCost && (
           <div style={{ textAlign: 'right' }}>
