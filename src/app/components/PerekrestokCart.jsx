@@ -129,7 +129,7 @@ const PerekrestokCart = ({ ingredients }) => {
           name: ingredient.name,
           originalName: ingredient.name,
           amount: amount,
-          price: 0,
+          cost: 0,
           unit: displayUnit,
           packageSize: packageSize,
           required: ingredient.quantity,
@@ -193,31 +193,52 @@ const PerekrestokCart = ({ ingredients }) => {
 
           const isOutOfStock = item.state === 'out_of_stock' ||
             item.product.balanceState === 'sold-out' ||
-            item.price === 0;
+            item.cost === 0;
 
           if (ourProductIds.has(productId)) {
             newItems[productId] = {
               ...prev[productId],
               title: item.product.title,
-              price: item.price / 100 || 0,
+              cost: item.cost / 100 || 0,
               amount: item.amount || 0,
               status: isOutOfStock ? 'error' : 'success',
               message: isOutOfStock ? 'Нет в наличии' : '',
               isExternal: false
             };
           } else {
+            const masterData = item.product.masterData;
+            const quantumStep = masterData.quantumStep || 1000;
+            let displayAmount;
+            let displayUnit;
+
+            switch (masterData.unitName) {
+              case 'кг':
+                displayUnit = 'г';
+                displayAmount = item.amount;
+                break;
+              case 'л':
+                displayUnit = 'мл';
+                displayAmount = item.amount;
+                break;
+              case 'шт':
+                displayUnit = 'шт';
+                displayAmount = item.amount / quantumStep;
+                break;
+              default:
+                displayUnit = masterData.unitName;
+                displayAmount = item.amount;
+            }
+
             newItems[productId] = {
               id: productId,
               title: item.product.title,
-              price: item.price / 100 || 0,
-              amount: item.amount || 0,
+              cost: item.cost / 100 || 0,
+              amount: displayAmount,
               status: isOutOfStock ? 'error' : 'success',
               message: isOutOfStock ? 'Нет в наличии' : '',
               isExternal: true,
-              unit: item.product.masterData.unitName === 'кг' ? 'г' :
-                item.product.masterData.unitName === 'л' ? 'мл' :
-                  item.product.masterData.unitName,
-              packageSize: item.product.masterData.quantum / 1000
+              unit: displayUnit,
+              packageSize: quantumStep
             };
           }
         });
@@ -267,59 +288,80 @@ const PerekrestokCart = ({ ingredients }) => {
     <List.Item>
       <div style={{
         display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: 8,
-        width: '100%',
-        flexWrap: 'nowrap'
+        flexDirection: 'column',
+        gap: 4,
+        width: '100%'
       }}>
-        {/* Левая часть - название и детали */}
+        {/* Заголовок с полным переносом */}
         <div style={{
-          flex: 1,
-          minWidth: 0,
-          overflow: 'hidden'
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 8,
+          flexWrap: 'wrap'
         }}>
+          <Text
+            strong
+            delete={item.status === 'error'}
+            style={{
+              flex: 1,
+              minWidth: '60%',
+              wordBreak: 'break-word',
+              whiteSpace: 'normal'
+            }}
+          >
+            {item.title || item.name}
+          </Text>
+
+          {/* Цена и статус в одной строке */}
           <div style={{
             display: 'flex',
-            alignItems: 'baseline',
+            alignItems: 'center',
             gap: 8,
-            flexWrap: 'wrap'
+            flexShrink: 0
           }}>
-            <Text
-              strong
-              delete={item.status === 'error'}
+            {item.cost !== 0 && item.status !== 'error' && (
+              <Text
+                strong
+                style={{
+                  whiteSpace: 'nowrap',
+                  fontSize: 14
+                }}
+              >
+                {item.cost}₽
+              </Text>
+            )}
+            <div style={{ flexShrink: 0 }}>
+              {statusIcon(item.status, item.message)}
+            </div>
+          </div>
+        </div>
+
+        {/* Детали продукта */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          flexWrap: 'wrap'
+        }}>
+          {item.isExternal && (
+            <Tag
+              color="green"
               style={{
-                fontSize: 'clamp(14px, 3vw, 16px)',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
+                margin: 0,
+                flexShrink: 0,
+                fontSize: 12
               }}
             >
-              {item.title || item.name}
-              {item.isExternal && (
-                <Tag
-                  color="blue"
-                  style={{
-                    marginLeft: 8,
-                    flexShrink: 0,
-                    fontSize: 'clamp(12px, 2.5vw, 14px)'
-                  }}
-                >
-                  Внешний
-                </Tag>
-              )}
-            </Text>
-          </div>
+              Из корзины
+            </Tag>
+          )}
 
           <Text
             type="secondary"
             delete={item.status === 'error'}
             style={{
-              fontSize: 'clamp(12px, 2.5vw, 14px)',
-              display: 'block',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
+              fontSize: 12,
+              whiteSpace: 'nowrap'
             }}
           >
             {item.isExternal
@@ -328,30 +370,6 @@ const PerekrestokCart = ({ ingredients }) => {
                 ? `${item.required} ${item.originalUnit}`
                 : `${item.required}${item.originalUnit} → ${item.packages}×${item.packageSize}${item.convertedUnit}`}
           </Text>
-        </div>
-
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          flexShrink: 0,
-          marginLeft: 'auto',
-          paddingLeft: 8
-        }}>
-          {item.price !== 0 && item.status !== 'error' && (
-            <Text
-              strong
-              style={{
-                fontSize: 'clamp(14px, 3vw, 16px)',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              {(item.price * (item.amount / 1000)).toFixed(2)}₽
-            </Text>
-          )}
-          <div style={{ flexShrink: 0 }}>
-            {statusIcon(item.status, item.message)}
-          </div>
         </div>
       </div>
     </List.Item>
