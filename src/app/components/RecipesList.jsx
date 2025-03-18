@@ -28,6 +28,7 @@ import {
 import EditRecipeForm from './EditRecipeForm';
 import DishModal from './DishModal'
 import { useAuth } from '../context/AuthContext'
+import { pluralize } from '../helpers/pluralize';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -400,7 +401,7 @@ const RecipesList = ({ dishes, setDishes, allIngredients }) => {
                   />
                   {dish.ingredients.length > 3 && (
                     <Text type="secondary" style={{ fontSize: 12, marginTop: 8 }}>
-                      + еще {dish.ingredients.length - 3} {dish.ingredients.length - 3 === 1 ? 'ингредиент' : dish.ingredients.length - 3 >= 2 && dish.ingredients.length - 3 <= 4 ? 'ингредиента' : 'ингредиентов'}... 
+                      + еще {dish.ingredients.length - 3} {pluralize('ингредиент', dish.ingredients.length - 3)}... 
                     </Text>
                   )}
                   </div>

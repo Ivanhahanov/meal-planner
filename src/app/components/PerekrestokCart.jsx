@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Input, Button, List, Space, Typography, Spin, Statistic, Tag, Collapse } from 'antd';
 import { InfoCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, CaretRightOutlined } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
+import { pluralize } from '../helpers/pluralize'
 
 const { Text } = Typography;
 const { Panel } = Collapse;
@@ -264,28 +265,95 @@ const PerekrestokCart = ({ ingredients }) => {
 
   const renderItem = (item) => (
     <List.Item>
-      <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-        <div>
-          <Text strong delete={item.status === 'error'}>
-            {item.title ? item.title : item.name}
-            {item.isExternal && <Tag color="blue" style={{ marginLeft: 8 }}>Внешний</Tag>}
-          </Text>
-          <br />
-          <Text type="secondary" delete={item.status === 'error'}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 8,
+        width: '100%',
+        flexWrap: 'nowrap'
+      }}>
+        {/* Левая часть - название и детали */}
+        <div style={{
+          flex: 1,
+          minWidth: 0,
+          overflow: 'hidden'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: 8,
+            flexWrap: 'wrap'
+          }}>
+            <Text
+              strong
+              delete={item.status === 'error'}
+              style={{
+                fontSize: 'clamp(14px, 3vw, 16px)',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}
+            >
+              {item.title || item.name}
+              {item.isExternal && (
+                <Tag
+                  color="blue"
+                  style={{
+                    marginLeft: 8,
+                    flexShrink: 0,
+                    fontSize: 'clamp(12px, 2.5vw, 14px)'
+                  }}
+                >
+                  Внешний
+                </Tag>
+              )}
+            </Text>
+          </div>
+
+          <Text
+            type="secondary"
+            delete={item.status === 'error'}
+            style={{
+              fontSize: 'clamp(12px, 2.5vw, 14px)',
+              display: 'block',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}
+          >
             {item.isExternal
               ? `${item.amount} ${item.unit}`
               : item.isExact
-                ? `${item.required} ${item.originalUnit}` // Для продуктов на развес
-                : `${item.required}${item.originalUnit} → ${item.packages} уп. × ${item.packageSize}${item.convertedUnit}`}
+                ? `${item.required} ${item.originalUnit}`
+                : `${item.required}${item.originalUnit} → ${item.packages}×${item.packageSize}${item.convertedUnit}`}
           </Text>
         </div>
-        <Space>
+
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          flexShrink: 0,
+          marginLeft: 'auto',
+          paddingLeft: 8
+        }}>
           {item.price !== 0 && item.status !== 'error' && (
-            <Text strong>{(item.price * (item.amount / 1000)).toFixed(2)} ₽</Text>
+            <Text
+              strong
+              style={{
+                fontSize: 'clamp(14px, 3vw, 16px)',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {(item.price * (item.amount / 1000)).toFixed(2)}₽
+            </Text>
           )}
-          {statusIcon(item.status, item.message)}
-        </Space>
-      </Space>
+          <div style={{ flexShrink: 0 }}>
+            {statusIcon(item.status, item.message)}
+          </div>
+        </div>
+      </div>
     </List.Item>
   );
 
@@ -314,18 +382,10 @@ const PerekrestokCart = ({ ingredients }) => {
 
         {unconvertedIngredients.length > 0 && (
           <Collapse
-            bordered={false}
-            ghost
-            // expandIcon={({ isActive }) => <CaretRightOutlined rotate={isActive ? 90 : 0} />}
-            className="unconverted-collapse"
             items={[
               {
                 key: '1',
-                label: (
-                  <span className="unconverted-header">
-                    Не удалось конвертировать {unconvertedIngredients.length} ингредиентов
-                  </span>
-                ),
+                label: `Не удалось конвертировать ${unconvertedIngredients.length} ${pluralize("ингредиент", unconvertedIngredients.length)}`,
                 children: (
                   <List
                     size="small"
@@ -356,7 +416,7 @@ const PerekrestokCart = ({ ingredients }) => {
               precision={2}
             />
             <Text type="secondary">
-              {cartData.invoice.itemNumber} товаров ·
+              {cartData.invoice.itemNumber} {pluralize("товар", cartData.invoice.itemNumber)} ·
               Доставка {cartData.invoice.deliveryCost === 0 ? 'бесплатно' :
                 `${(cartData.invoice.deliveryCost / 100).toFixed(2)} ₽`}
             </Text>
