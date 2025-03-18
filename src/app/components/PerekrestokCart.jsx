@@ -1,15 +1,17 @@
 "use client"
 import { useState, useEffect, useRef } from 'react';
 import { Input, Button, List, Space, Typography, Spin, Statistic, Tag, Collapse } from 'antd';
-import { InfoCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, CaretRightOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, EditOutlined } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
 import { pluralize } from '../helpers/pluralize'
+import PerekrestokRuleModal from './PerekrestokRuleModal';
 
 const { Text } = Typography;
-const { Panel } = Collapse;
 const SHEET_ID = process.env.NEXT_PUBLIC_GOOGLE_SHEET_ID;
 const INGREDIENTS_RANGE = process.env.NEXT_PUBLIC_GOOGLE_SHEET_INGREDIENTS_RANGE || 'Convert!A1:E';
 const CACHE_KEY = 'perekrestok_mapping_cache';
+
+
 
 const PerekrestokCart = ({ ingredients }) => {
   const { token } = useAuth();
@@ -22,6 +24,8 @@ const PerekrestokCart = ({ ingredients }) => {
   const [mapping, setMapping] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const initialLoad = useRef(true);
+  const [selectedIngredient, setSelectedIngredient] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -64,90 +68,107 @@ const PerekrestokCart = ({ ingredients }) => {
     }
   }, [token]);
 
-  useEffect(() => {
-    const convertIngredients = () => {
-      const converted = [];
-      const unconverted = [];
+  const handleSaveRule = async (rule) => {
+    try {
+      // Обновляем локальное состояние
+      setMapping(prev => ({
+        ...prev,
+        [rule.name]: rule
+      }));
 
-      ingredients.forEach(ingredient => {
-        // Проверяем наличие правила конвертации для ингредиента
-        const rule = mapping[ingredient.name];
-        if (!rule) {
-          unconverted.push(ingredient);
+      // // Обновляем кэш
+      // sessionStorage.removeItem(CACHE_KEY);
+      setModalVisible(false);
+      convertIngredients();
+    } catch (error) {
+      console.error('Ошибка сохранения правила:', error);
+    }
+  };
+
+  const convertIngredients = () => {
+    const converted = [];
+    const unconverted = [];
+
+    ingredients.forEach(ingredient => {
+      // Проверяем наличие правила конвертации для ингредиента
+      const rule = mapping[ingredient.name];
+      if (!rule) {
+        unconverted.push(ingredient);
+        return;
+      }
+
+      // Проверяем поддерживаемые единицы измерения
+      let requiredBase;
+      switch (ingredient.unit) {
+        case 'кг':
+          requiredBase = ingredient.quantity * 1000; // Конвертируем кг в граммы
+          break;
+        case 'г':
+          requiredBase = ingredient.quantity;
+          break;
+        case 'л':
+          requiredBase = ingredient.quantity * 1000; // Конвертируем литры в миллилитры
+          break;
+        case 'мл':
+          requiredBase = ingredient.quantity;
+          break;
+        case 'шт':
+          requiredBase = ingredient.quantity; // Штучные товары
+          break;
+        default:
+          unconverted.push(ingredient); // Неподдерживаемая единица измерения
           return;
-        }
+      }
 
-        // Проверяем поддерживаемые единицы измерения
-        let requiredBase;
-        switch (ingredient.unit) {
-          case 'кг':
-            requiredBase = ingredient.quantity * 1000; // Конвертируем кг в граммы
-            break;
-          case 'г':
-            requiredBase = ingredient.quantity;
-            break;
-          case 'л':
-            requiredBase = ingredient.quantity * 1000; // Конвертируем литры в миллилитры
-            break;
-          case 'мл':
-            requiredBase = ingredient.quantity;
-            break;
-          case 'шт':
-            requiredBase = ingredient.quantity; // Штучные товары
-            break;
-          default:
-            unconverted.push(ingredient); // Неподдерживаемая единица измерения
-            return;
-        }
+      // Обрабатываем специальные правила для разных типов продуктов
+      const isPieces = rule.unit.toLowerCase() === 'шт';
+      let packageSize = rule.packageSize;
 
-        // Обрабатываем специальные правила для разных типов продуктов
-        const isPieces = rule.unit.toLowerCase() === 'шт';
-        let packageSize = rule.packageSize;
+      // Конвертация литров в миллилитры для расчетов
+      if (rule.unit.toLowerCase() === 'л' && !isPieces) {
+        packageSize *= 1000;
+      }
 
-        // Конвертация литров в миллилитры для расчетов
-        if (rule.unit.toLowerCase() === 'л' && !isPieces) {
-          packageSize *= 1000;
-        }
+      let packages, amount, displayUnit;
 
-        let packages, amount, displayUnit;
+      if (rule.rounding === 'exact') {
+        // Продукты на развес без упаковки
+        packages = 1;
+        amount = requiredBase;
+        displayUnit = ingredient.unit; // Сохраняем оригинальную единицу
+      } else {
+        // Расчет для упакованных продуктов
+        packages = Math.ceil(requiredBase / packageSize);
+        amount = isPieces ? packages * 1000 : packages * 1000;
+        displayUnit = isPieces ? 'шт' : rule.unit.toLowerCase() === 'л' ? 'мл' : rule.unit;
+      }
 
-        if (rule.rounding === 'exact') {
-          // Продукты на развес без упаковки
-          packages = 1;
-          amount = requiredBase;
-          displayUnit = ingredient.unit; // Сохраняем оригинальную единицу
-        } else {
-          // Расчет для упакованных продуктов
-          packages = Math.ceil(requiredBase / packageSize);
-          amount = isPieces ? packages * 1000 : packages * 1000;
-          displayUnit = isPieces ? 'шт' : rule.unit.toLowerCase() === 'л' ? 'мл' : rule.unit;
-        }
+      // Формируем объект конвертированного продукта
+      const convertedIngredient = {
+        id: rule.id,
+        name: ingredient.name,
+        originalName: ingredient.name,
+        amount: amount,
+        cost: 0,
+        unit: displayUnit,
+        packageSize: packageSize,
+        required: ingredient.quantity,
+        originalUnit: ingredient.unit,
+        packages: packages,
+        convertedUnit: displayUnit,
+        isPieces: isPieces,
+        isExact: rule.rounding === 'exact'
+      };
 
-        // Формируем объект конвертированного продукта
-        const convertedIngredient = {
-          id: rule.id,
-          name: ingredient.name,
-          originalName: ingredient.name,
-          amount: amount,
-          cost: 0,
-          unit: displayUnit,
-          packageSize: packageSize,
-          required: ingredient.quantity,
-          originalUnit: ingredient.unit,
-          packages: packages,
-          convertedUnit: displayUnit,
-          isPieces: isPieces,
-          isExact: rule.rounding === 'exact'
-        };
+      converted.push(convertedIngredient);
+    });
 
-        converted.push(convertedIngredient);
-      });
+    // Обновляем состояния
+    setProducts(converted);
+    setUnconvertedIngredients(unconverted);
+  };
 
-      // Обновляем состояния
-      setProducts(converted);
-      setUnconvertedIngredients(unconverted);
-    };
-
+  useEffect(() => {
     if (Object.keys(mapping).length > 0) convertIngredients();
   }, [ingredients, mapping]);
 
@@ -286,19 +307,28 @@ const PerekrestokCart = ({ ingredients }) => {
 
   const renderItem = (item) => (
     <List.Item>
+        
       <div style={{
         display: 'flex',
         flexDirection: 'column',
         gap: 4,
         width: '100%'
       }}>
-        {/* Заголовок с полным переносом */}
         <div style={{
           display: 'flex',
           alignItems: 'flex-start',
-          gap: 8,
+          gap: 4,
           flexWrap: 'wrap'
         }}>
+          <Button
+          icon={<EditOutlined />}
+          size='small'
+          type="text"
+          onClick={() => {
+            setSelectedIngredient({...item, quantity: item.required});
+            setModalVisible(true);
+          }}
+        />
           <Text
             strong
             delete={item.status === 'error'}
@@ -411,7 +441,18 @@ const PerekrestokCart = ({ ingredients }) => {
                     renderItem={item => (
                       <List.Item>
                         <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                          <div>
+                          <Button
+                            icon={<EditOutlined />}
+                            type="text"
+                            onClick={() => {
+                              setSelectedIngredient(item);
+                              setModalVisible(true);
+                            }}
+                            style={{ marginRight: 4 }}
+                          />
                           <Text>{item.name}</Text>
+                          </div>
                           <Text type="secondary">{item.quantity} {item.unit}</Text>
                         </Space>
                       </List.Item>
@@ -451,6 +492,14 @@ const PerekrestokCart = ({ ingredients }) => {
           Сформировать корзину в Перекрестке
         </Button>
       </Space>
+      <PerekrestokRuleModal
+        visible={modalVisible}
+        ingredient={selectedIngredient}
+        mapping={mapping}
+        onSave={handleSaveRule}
+        onCancel={() => setModalVisible(false)}
+        authKey={apiKey}
+      />
     </Spin>
   );
 };
