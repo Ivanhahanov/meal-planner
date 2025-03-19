@@ -131,17 +131,10 @@ const PerekrestokCart = ({ ingredients }) => {
 
       let packages, amount, displayUnit;
 
-      if (rule.rounding === 'exact') {
-        // Продукты на развес без упаковки
-        packages = 1;
-        amount = requiredBase;
-        displayUnit = ingredient.unit; // Сохраняем оригинальную единицу
-      } else {
-        // Расчет для упакованных продуктов
-        packages = Math.ceil(requiredBase / packageSize);
-        amount = isPieces ? packages * 1000 : packages * 1000;
-        displayUnit = isPieces ? 'шт' : rule.unit.toLowerCase() === 'л' ? 'мл' : rule.unit;
-      }
+
+      packages = Math.ceil(requiredBase / packageSize);
+      amount = isPieces ? packages * 1000 : packages * 1000;
+      displayUnit = isPieces ? 'шт' : rule.unit.toLowerCase() === 'л' ? 'мл' : rule.unit;      
 
       // Формируем объект конвертированного продукта
       const convertedIngredient = {
@@ -157,7 +150,6 @@ const PerekrestokCart = ({ ingredients }) => {
         packages: packages,
         convertedUnit: displayUnit,
         isPieces: isPieces,
-        isExact: rule.rounding === 'exact'
       };
 
       converted.push(convertedIngredient);
@@ -394,11 +386,7 @@ const PerekrestokCart = ({ ingredients }) => {
               whiteSpace: 'nowrap'
             }}
           >
-            {item.isExternal
-              ? `${item.amount} ${item.unit}`
-              : item.isExact
-                ? `${item.required} ${item.originalUnit}`
-                : `${item.required}${item.originalUnit} → ${item.packages}×${item.packageSize}${item.convertedUnit}`}
+            {item.isExternal ? `${item.amount} ${item.unit}`: `${item.required}${item.originalUnit} → ${item.packages}×${item.packageSize}${item.convertedUnit}`}
           </Text>
         </div>
       </div>
@@ -502,7 +490,7 @@ const PerekrestokCart = ({ ingredients }) => {
         authKey={apiKey}
       />
     </Spin>
-  )
+  );
 };
 
 export default PerekrestokCart;

@@ -31,10 +31,10 @@ const PerekrestokRuleModal = ({ visible, ingredient, onSave, onCancel, authKey, 
     const md = product.masterData;
     let unit, packageSize;
 
-    if (md.weight) {
+    if (md.weight && !md.volume) {
       unit = 'г';
       packageSize = md.weight;
-    } else if (md.volume) {
+    } else if (md.weight && md.volume) {
       unit = 'мл';
       packageSize = md.volume;
     } else {
@@ -123,10 +123,6 @@ const PerekrestokRuleModal = ({ visible, ingredient, onSave, onCancel, authKey, 
     });
   };
 
-  const handleFormChange = (changedValues) => {
-    updateRulePreview(changedValues);
-  };
-
   const handleSave = async () => {
     if (!rulePreview) return;
 
@@ -178,10 +174,10 @@ const PerekrestokRuleModal = ({ visible, ingredient, onSave, onCancel, authKey, 
 
   const getSaleInfo = (product) => {
     const md = product.masterData;
-    if (md.weight) {
+    if (md.weight && !md.volume) {
       return `Упаковка: ${md.weight}г`;
     }
-    if (md.volume) {
+    if (md.weight && md.volume) {
       return `Упаковка: ${md.volume}мл`;
     }
     return `Продаётся на развес (шаг: ${md.quantumStep}${md.unitName === 'кг' ? 'г' : md.unitName})`;
@@ -189,7 +185,7 @@ const PerekrestokRuleModal = ({ visible, ingredient, onSave, onCancel, authKey, 
 
   return (
     <Modal
-      title={`Правило для: ${ingredient?.name} (${ingredient.quantity}${ingredient?.unit})`}
+      title={`Правило для: ${ingredient?.name} (${ingredient?.quantity}${ingredient?.unit})`}
       open={visible}
       onCancel={onCancel}
       footer={null}
