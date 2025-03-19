@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from 'react';
-import { Modal, Input, List, Card, Button, Typography, Form, Flex, Rate, message } from 'antd';
+import { Modal, Input, List, Card, Button, Typography, Flex, message } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
 
@@ -15,7 +15,6 @@ const PerekrestokRuleModal = ({ visible, ingredient, onSave, onCancel, authKey, 
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [loading, setLoading] = useState(false);
   const [rulePreview, setRulePreview] = useState(null);
-  const [form] = Form.useForm();
 
   useEffect(() => {
     if (visible && ingredient) {
@@ -45,7 +44,6 @@ const PerekrestokRuleModal = ({ visible, ingredient, onSave, onCancel, authKey, 
     return {
       unit: unit,
       packageSize: packageSize,
-      rounding: 'up'
     };
   };
 
@@ -53,12 +51,10 @@ const PerekrestokRuleModal = ({ visible, ingredient, onSave, onCancel, authKey, 
     const existingRule = mapping[ingredient.name];
     if (existingRule) {
       setRulePreview(existingRule);
-      form.setFieldsValue(existingRule);
     }
   };
 
   const resetForm = () => {
-    form.resetFields();
     setSelectedProduct(null);
     setRulePreview(null);
     setResults([]);
@@ -101,11 +97,6 @@ const PerekrestokRuleModal = ({ visible, ingredient, onSave, onCancel, authKey, 
     setSelectedProduct(product);
     const productMeta = getProductMeta(product);
 
-    form.setFieldsValue({
-      packageSize: productMeta.packageSize,
-      unit: productMeta.unit
-    });
-
     updateRulePreview({
       packageSize: productMeta.packageSize,
       unit: productMeta.unit
@@ -118,7 +109,6 @@ const PerekrestokRuleModal = ({ visible, ingredient, onSave, onCancel, authKey, 
     setRulePreview({
       name: ingredient.name,
       id: selectedProduct.id,
-      rounding: 'up',
       ...values
     });
   };
@@ -141,7 +131,6 @@ const PerekrestokRuleModal = ({ visible, ingredient, onSave, onCancel, authKey, 
         rulePreview.id,
         rulePreview.packageSize.toString(),
         rulePreview.unit,
-        'up' // Фиксированное значение округления
       ];
 
       await fetch(

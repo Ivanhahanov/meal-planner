@@ -30,13 +30,6 @@ const PerekrestokCart = ({ ingredients }) => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const cachedData = sessionStorage.getItem(CACHE_KEY);
-        if (cachedData) {
-          setMapping(JSON.parse(cachedData));
-          setIsLoading(false);
-          return;
-        }
-
         const response = await fetch(
           `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${INGREDIENTS_RANGE}`,
           { headers: { 'Authorization': `Bearer ${token}` } }
@@ -49,11 +42,9 @@ const PerekrestokCart = ({ ingredients }) => {
             id: row[1],
             packageSize: parseFloat(row[2]),
             unit: row[3],
-            rounding: row[4]
           }
         }), {}) || {};
 
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify(mappingData));
         setMapping(mappingData);
       } catch (error) {
         console.error('Ошибка загрузки данных:', error);
@@ -76,8 +67,6 @@ const PerekrestokCart = ({ ingredients }) => {
         [rule.name]: rule
       }));
 
-      // // Обновляем кэш
-      // sessionStorage.removeItem(CACHE_KEY);
       setModalVisible(false);
       convertIngredients();
     } catch (error) {
@@ -134,7 +123,7 @@ const PerekrestokCart = ({ ingredients }) => {
 
       packages = Math.ceil(requiredBase / packageSize);
       amount = isPieces ? packages * 1000 : packages * 1000;
-      displayUnit = isPieces ? 'шт' : rule.unit.toLowerCase() === 'л' ? 'мл' : rule.unit;      
+      displayUnit = isPieces ? 'шт' : rule.unit.toLowerCase() === 'л' ? 'мл' : rule.unit;
 
       // Формируем объект конвертированного продукта
       const convertedIngredient = {
@@ -299,7 +288,7 @@ const PerekrestokCart = ({ ingredients }) => {
 
   const renderItem = (item) => (
     <List.Item>
-        
+
       <div style={{
         display: 'flex',
         flexDirection: 'column',
@@ -312,15 +301,18 @@ const PerekrestokCart = ({ ingredients }) => {
           gap: 4,
           flexWrap: 'wrap'
         }}>
-          <Button
-          icon={<EditOutlined />}
-          size='small'
-          type="text"
-          onClick={() => {
-            setSelectedIngredient({...item, quantity: item.required});
-            setModalVisible(true);
-          }}
-        />
+          {!item.isExternal &&
+            <Button
+              icon={<EditOutlined />}
+              size='small'
+              type="text"
+              onClick={() => {
+                setSelectedIngredient({ ...item, quantity: item.required });
+                setModalVisible(true);
+              }}
+              disabled={apiKey===''}
+            />
+          }
           <Text
             strong
             delete={item.status === 'error'}
@@ -386,7 +378,7 @@ const PerekrestokCart = ({ ingredients }) => {
               whiteSpace: 'nowrap'
             }}
           >
-            {item.isExternal ? `${item.amount} ${item.unit}`: `${item.required}${item.originalUnit} → ${item.packages}×${item.packageSize}${item.convertedUnit}`}
+            {item.isExternal ? `${item.amount} ${item.unit}` : `${item.required}${item.originalUnit} → ${item.packages}×${item.packageSize}${item.convertedUnit}`}
           </Text>
         </div>
       </div>
@@ -429,19 +421,20 @@ const PerekrestokCart = ({ ingredients }) => {
                     renderItem={item => (
                       <List.Item>
                         <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-                          
+
                           <Text>{item.name}</Text>
-                          
+
                           <div>
-                          <Text type="secondary">{item.quantity} {item.unit}</Text>
-                          <Button
-                            icon={<EditOutlined />}
-                            onClick={() => {
-                              setSelectedIngredient(item);
-                              setModalVisible(true);
-                            }}
-                            style={{ marginLeft: 8 }}
-                          />
+                            <Text type="secondary">{item.quantity} {item.unit}</Text>
+                            <Button
+                              icon={<EditOutlined />}
+                              onClick={() => {
+                                setSelectedIngredient(item);
+                                setModalVisible(true);
+                              }}
+                              disabled={apiKey===''}
+                              style={{ marginLeft: 8 }}
+                            />
                           </div>
                         </Space>
                       </List.Item>
