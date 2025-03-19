@@ -9,9 +9,6 @@ import PerekrestokRuleModal from './PerekrestokRuleModal';
 const { Text } = Typography;
 const SHEET_ID = process.env.NEXT_PUBLIC_GOOGLE_SHEET_ID;
 const INGREDIENTS_RANGE = process.env.NEXT_PUBLIC_GOOGLE_SHEET_INGREDIENTS_RANGE || 'Convert!A1:E';
-const CACHE_KEY = 'perekrestok_mapping_cache';
-
-
 
 const PerekrestokCart = ({ ingredients }) => {
   const { token } = useAuth();
@@ -177,6 +174,7 @@ const PerekrestokCart = ({ ingredients }) => {
 
       if (!response.ok) {
         const errorData = await response.json();
+        // TODO: add exception for QUANTITY_BIGGER_THAN_STOCK 
         if (response.status === 412 && errorData.error?.code === 'OUT_OF_STOCK') {
           updateOperation(id, 'error', 'Нет в наличии', amount);
           return;
@@ -310,7 +308,7 @@ const PerekrestokCart = ({ ingredients }) => {
                 setSelectedIngredient({ ...item, quantity: item.required });
                 setModalVisible(true);
               }}
-              disabled={apiKey===''}
+              disabled={apiKey === ''}
             />
           }
           <Text
@@ -432,7 +430,7 @@ const PerekrestokCart = ({ ingredients }) => {
                                 setSelectedIngredient(item);
                                 setModalVisible(true);
                               }}
-                              disabled={apiKey===''}
+                              disabled={apiKey === ''}
                               style={{ marginLeft: 8 }}
                             />
                           </div>
