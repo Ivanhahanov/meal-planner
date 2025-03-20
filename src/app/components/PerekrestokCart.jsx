@@ -39,6 +39,7 @@ const PerekrestokCart = ({ ingredients }) => {
             id: row[1],
             packageSize: parseFloat(row[2]),
             unit: row[3],
+            isPackage: row[4]
           }
         }), {}) || {};
 
@@ -107,7 +108,6 @@ const PerekrestokCart = ({ ingredients }) => {
       }
 
       // Обрабатываем специальные правила для разных типов продуктов
-      const isPieces = rule.unit.toLowerCase() === 'шт';
       let packageSize = rule.packageSize;
 
       // Конвертация литров в миллилитры для расчетов
@@ -115,12 +115,12 @@ const PerekrestokCart = ({ ingredients }) => {
         packageSize *= 1000;
       }
 
-      let packages, amount, displayUnit;
+      let packages, amount, isPackage;
 
-
+      
       packages = Math.ceil(requiredBase / packageSize);
-      amount = isPieces ? packages * 1000 : packages * 1000;
-      displayUnit = isPieces ? 'шт' : rule.unit.toLowerCase() === 'л' ? 'мл' : rule.unit;
+      isPackage = rule.isPackage === "yes" ? true: false
+      amount = isPackage ? packages * 1000 : requiredBase;
 
       // Формируем объект конвертированного продукта
       const convertedIngredient = {
@@ -129,14 +129,14 @@ const PerekrestokCart = ({ ingredients }) => {
         originalName: ingredient.name,
         amount: amount,
         cost: 0,
-        unit: displayUnit,
+        unit: rule.unit,
         packageSize: packageSize,
         required: ingredient.quantity,
         originalUnit: ingredient.unit,
         packages: packages,
-        convertedUnit: displayUnit,
-        isPieces: isPieces,
+        isPackage: isPackage,
       };
+      console.log(convertedIngredient, ingredient, requiredBase)
 
       converted.push(convertedIngredient);
     });
@@ -376,7 +376,7 @@ const PerekrestokCart = ({ ingredients }) => {
               whiteSpace: 'nowrap'
             }}
           >
-            {item.isExternal ? `${item.amount} ${item.unit}` : `${item.required}${item.originalUnit} → ${item.packages}×${item.packageSize}${item.convertedUnit}`}
+            {item.isExternal ? `${item.amount} ${item.unit}` : `${item.required}${item.originalUnit} → ${item.packages}×${item.packageSize}${item.unit}`}
           </Text>
         </div>
       </div>

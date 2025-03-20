@@ -28,7 +28,7 @@ const PerekrestokRuleModal = ({ visible, ingredient, onSave, onCancel, authKey, 
 
   const getProductMeta = (product) => {
     const md = product.masterData;
-    let unit, packageSize;
+    let unit, packageSize, isPackage = "yes";
 
     if (md.weight && !md.volume) {
       unit = 'г';
@@ -39,11 +39,13 @@ const PerekrestokRuleModal = ({ visible, ingredient, onSave, onCancel, authKey, 
     } else {
       unit = md.unitName === 'кг' ? 'г' : md.unitName;
       packageSize = md.quantumStep;
+      isPackage = "no"
     }
 
     return {
       unit: unit,
       packageSize: packageSize,
+      isPackage: isPackage
     };
   };
 
@@ -96,10 +98,11 @@ const PerekrestokRuleModal = ({ visible, ingredient, onSave, onCancel, authKey, 
   const handleProductSelect = (product) => {
     setSelectedProduct(product);
     const productMeta = getProductMeta(product);
-
+    console.log(productMeta)
     updateRulePreview({
       packageSize: productMeta.packageSize,
-      unit: productMeta.unit
+      unit: productMeta.unit,
+      isPackage: productMeta.isPackage,
     });
   };
 
@@ -131,6 +134,7 @@ const PerekrestokRuleModal = ({ visible, ingredient, onSave, onCancel, authKey, 
         rulePreview.id,
         rulePreview.packageSize.toString(),
         rulePreview.unit,
+        rulePreview.isPackage
       ];
 
       await fetch(
