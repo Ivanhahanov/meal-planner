@@ -84,9 +84,6 @@ const PerekrestokRuleModal = ({ visible, ingredient, onSave, onCancel, authKey, 
       const data = await response.json();
       setResults(data.content?.items || []);
 
-      if (data.content?.items?.[0]) {
-        handleProductSelect(data.content.items[0]);
-      }
     } catch (error) {
       console.error('Search error:', error);
       message.error('Ошибка поиска товаров');
@@ -96,10 +93,11 @@ const PerekrestokRuleModal = ({ visible, ingredient, onSave, onCancel, authKey, 
   };
 
   const handleProductSelect = (product) => {
-    setSelectedProduct(product);
     const productMeta = getProductMeta(product);
-    console.log(productMeta)
-    updateRulePreview({
+    setSelectedProduct(product);
+    setRulePreview({
+      name: ingredient.name,
+      id: product.id,
       packageSize: productMeta.packageSize,
       unit: productMeta.unit,
       isPackage: productMeta.isPackage,
